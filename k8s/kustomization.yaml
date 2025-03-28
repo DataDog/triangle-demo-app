@@ -1,0 +1,5 @@
+namespace: triangle
+
+resources:
+  - simulator-deployment.yaml
+  - simulator-service.yaml
