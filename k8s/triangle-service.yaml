@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: triangle
+spec:
+  type: ClusterIP
+  selector:
+    app: triangle
+  ports:
+    - port: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: triangle
+spec:
+  selector:
+    matchLabels:
+      app: triangle
+  template:
+    metadata:
+      labels:
+        app: triangle
+    spec:
+      containers:
+        - name: triangle
+          image: python:3.11-slim
+          command: ["python", "-m", "http.server", "8000"]
+          ports:
+            - containerPort: 8000
