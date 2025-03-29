@@ -1,6 +1,6 @@
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-use mongodb::{bson::doc, Client, Collection};
+use mongodb::{Client, Collection};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::time::{sleep, Duration};
 
@@ -23,10 +23,10 @@ async fn generate_signal() -> Signal {
     Signal { x, y, timestamp }
 }
 
-async fn send_to_simulation(signal: &Signal) {
+async fn send_to_simulation(signal: &Signal, url: &str) {
     let client = reqwest::Client::new();
     let result = client
-        .post("http://simulation:8000/signal")
+        .post(url)
         .json(signal)
         .send()
         .await;
@@ -37,8 +37,9 @@ async fn send_to_simulation(signal: &Signal) {
 }
 
 async fn insert_to_mongo(collection: &Collection<Signal>, signal: &Signal) {
-    if let Err(err) = collection.insert_one(signal).await {
-        eprintln!("❌ Failed to insert into MongoDB: {}", err);
+    match collection.insert_one(signal).await {
+        Ok(result) => println!("✅ Inserted signal into MongoDB: {:?}", result.inserted_id),
+        Err(err) => eprintln!("❌ Failed to insert into MongoDB: {}", err),
     }
 }
 
@@ -46,10 +47,19 @@ async fn insert_to_mongo(collection: &Collection<Signal>, signal: &Signal) {
 async fn main() {
     println!("🚀 Signal source starting...");
 
-    let mongo_uri = std::env::var("MONGO_URI").unwrap_or_else(|_| {
-        eprintln!("⚠️  MONGO_URI not set, defaulting to mongodb://mongodb:27017");
-        "mongodb://mongodb:27017".into()
-    });
+    let mongo_user = std::env::var("MONGO_USERNAME").unwrap_or_else(|_| "mongouser".into());
+    let mongo_pass = std::env::var("MONGO_PASSWORD").unwrap_or_else(|_| "mongopass".into());
+    let mongo_db = std::env::var("MONGO_DB").unwrap_or_else(|_| "triangle".into());
+    let simulation_url = std::env::var("SIMULATION_URL")
+        .expect("❌ SIMULATION_URL must be set via environment variable");
+
+    let mongo_uri = format!(
+        "mongodb://{}:{}@mongodb:27017/{}?authSource=admin",
+        mongo_user, mongo_pass, mongo_db
+    );
+
+    println!("🔗 Mongo URI: {}", mongo_uri);
+    println!("📨 Simulation URL: {}", simulation_url);
 
     let client = match Client::with_uri_str(&mongo_uri).await {
         Ok(c) => c,
@@ -59,7 +69,7 @@ async fn main() {
         }
     };
 
-    let db = client.database("signalsim");
+    let db = client.database(&mongo_db);
     let collection = db.collection::<Signal>("signals");
 
     loop {
@@ -67,7 +77,7 @@ async fn main() {
         println!("📡 Generated signal: {:?}", signal);
 
         insert_to_mongo(&collection, &signal).await;
-        send_to_simulation(&signal).await;
+        send_to_simulation(&signal, &simulation_url).await;
 
         sleep(Duration::from_secs(5)).await;
     }
