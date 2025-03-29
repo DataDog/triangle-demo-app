@@ -1,0 +1,52 @@
+# ───── ENV/Secrets ─────
+.env
+.env.*     # e.g. .env.dev, .env.prod
+
+# ───── Docker ─────
+*.tar
+*.log
+docker-compose.override.yml
+
+# ───── Helm/K8s ─────
+*.tgz                         # Helm packaged charts
+helm-release.yaml            # Any rendered manifest snapshots
+.kube/
+.kubectl_cache/
+
+# ───── Rust ─────
+**/target/
+**/Cargo.lock                # optional: keep if binary crate
+**/*.rs.bk                   # rust-analyzer backups
+
+# ───── Node/React (for frontend) ─────
+**/node_modules/
+**/dist/
+**/build/
+**/.vite/
+**/.next/
+**/.parcel-cache/
+
+# ───── Python (for simulation?) ─────
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+**/.mypy_cache/
+
+# ───── Go (calculator?) ─────
+**/bin/
+**/pkg/
+**/*.exe
+**/*.test
+
+# ───── Editor + OS ─────
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml
+
+# ───── Misc ─────
+*.bak
+*.tmp
