@@ -10,5 +10,7 @@ service:
   port: 8000
 
 env:
-  MONGO_URI: ""
+  MONGO_DB: triangle
+  SIMULATION_URL: http://simulation:8000/signal
+
 resources: {}

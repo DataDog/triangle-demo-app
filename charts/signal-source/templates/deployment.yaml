@@ -21,6 +21,9 @@ spec:
                 name: mongodb-secret
             - configMapRef:
                 name: mongodb-config
+
           env:
-            - name: MONGO_URI
-              value: "mongodb://$(MONGO_USERNAME):$(MONGO_PASSWORD)@mongodb:27017/$(MONGO_DB)?authSource=admin"
+            - name: MONGO_DB
+              value: {{ .Values.env.MONGO_DB | quote }}
+            - name: SIMULATION_URL
+              value: {{ .Values.env.SIMULATION_URL | quote }}
