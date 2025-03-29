@@ -1,9 +1,0 @@
-dependencies:
-- name: base-tower
-  repository: file://../base-tower
-  version: 0.1.0
-- name: world-simulator
-  repository: file://../world-simulator
-  version: 0.1.0
-digest: sha256:aa942aad7cb29c18be60069f965b86fe7512903402c1cbd9f0c34bd803aacb03
-generated: "2025-03-29T08:36:00.048655-07:00"

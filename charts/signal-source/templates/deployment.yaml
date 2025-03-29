@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "signal-source.fullname" . }}
+  labels:
+    app: {{ include "signal-source.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "signal-source.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "signal-source.name" . }}
+    spec:
+      containers:
+        - name: signal-source
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: MONGO_URI
+              value: "{{ .Values.env.MONGO_URI }}"
