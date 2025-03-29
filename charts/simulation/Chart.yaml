@@ -1,0 +1,5 @@
+apiVersion: v2
+name: simulation
+version: 0.1.0
+description: Signal simulation service
+appVersion: "0.1.0"

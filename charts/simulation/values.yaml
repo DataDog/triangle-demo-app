@@ -1,14 +1,11 @@
 replicaCount: 1
 
 image:
-  repository: signal-source
+  repository: simulation
   tag: local
   pullPolicy: IfNotPresent
 
 service:
   type: ClusterIP
   port: 8000
-
-env:
-  MONGO_URI: ""
-resources: {}
+fullnameOverride: simulation
