@@ -9,3 +9,7 @@ service:
   type: ClusterIP
   port: 8000
 fullnameOverride: simulation
+
+env:
+  MONGO_URI: mongodb://mongouser:mongopass@mongodb:27017/triangle?authSource=admin
+  MONGO_DB: triangle

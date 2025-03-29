@@ -20,3 +20,17 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - containerPort: 8000
+          env:
+            - name: MONGO_URI
+              value: {{ .Values.env.MONGO_URI | quote }}
+            - name: MONGO_DB
+              value: {{ .Values.env.MONGO_DB | quote }}
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+

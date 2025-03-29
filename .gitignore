@@ -32,7 +32,7 @@ helm-release.yaml            # Any rendered manifest snapshots
 **/.pytest_cache/
 **/.mypy_cache/
 
-# ───── Go (calculator?) ─────
+# ───── Go (locator?) ─────
 **/bin/
 **/pkg/
 **/*.exe

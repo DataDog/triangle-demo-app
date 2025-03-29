@@ -10,6 +10,8 @@ service:
   port: 8000
 
 env:
+  MONGO_USERNAME: mongouser
+  MONGO_PASSWORD: mongopass
   MONGO_DB: triangle
   SIMULATION_URL: http://simulation:8000/signal
 
