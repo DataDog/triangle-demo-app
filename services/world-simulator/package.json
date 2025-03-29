@@ -2,10 +2,9 @@
   "name": "world-simulator",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "echo ⏳ Building... && tsc && vite build --logLevel info",
     "preview": "vite preview"
   },
   "devDependencies": {
