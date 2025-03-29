@@ -1,0 +1,24 @@
+namespace: triangle
+services:
+  world-simulator:
+    name: world-simulator
+    port: 80
+    development:
+      port: 5173
+      api_url: http://localhost:80
+    production:
+      api_url: http://minikube.local
+  base-tower:
+    name: base-tower
+    port: 80
+  postgres:
+    name: postgres
+    port: 5432
+  triangle:
+    name: triangle
+    port: 8080
+
+kubernetes:
+  ingress:
+    host: minikube.local
+    class: nginx

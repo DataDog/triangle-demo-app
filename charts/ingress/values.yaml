@@ -1,0 +1,22 @@
+ingress:
+  name: triangle-ingress
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+  hosts:
+    - host: localhost
+      paths:
+        - path: /api/base-tower
+          pathType: Prefix
+          service: base-tower
+          port: 8080
+        - path: /
+          pathType: Prefix
+          service: world-simulator
+          port: 80
+  service:
+    type: ClusterIP
+    ports:
+      http: 8080
