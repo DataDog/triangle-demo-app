@@ -1,4 +1,0 @@
-namespace: triangle
-
-resources:
-  - namespace.yaml

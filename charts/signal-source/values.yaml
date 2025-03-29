@@ -1,0 +1,15 @@
+replicaCount: 1
+
+image:
+  repository: signal-source
+  tag: local
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8000
+
+env:
+  MONGO_URI: "mongodb://mongodb:27017"
+
+resources: {}
