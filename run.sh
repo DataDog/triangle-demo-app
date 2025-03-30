@@ -14,22 +14,19 @@ else
   exit 1
 fi
 
-echo "🐳 Building signal-source image"
+echo "🐳 Building Docker images..."
 docker build -t signal-source:local ./services/signal-source
-
-echo "📳 Building simulation image"
 docker build -t simulation:local ./services/simulation
+docker build -t locator:local ./services/locator
 
-echo "📦 Deploying MongoDB chart"
+echo "📦 Deploying Helm charts..."
 helm upgrade --install mongodb ./charts/mongodb \
   --set-string username=$MONGO_USERNAME \
   --set-string password=$MONGO_PASSWORD \
   --set-string database=$MONGO_DB
 
-echo "📦 Deploying Signal Source chart"
-helm upgrade --install signal-source ./charts/signal-source
-
-echo "📦 Deploying Simulation chart"
 helm upgrade --install simulation ./charts/simulation
+helm upgrade --install signal-source ./charts/signal-source
+helm upgrade --install locator ./charts/locator
 
 echo "✅ All services deployed."
