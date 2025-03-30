@@ -1,0 +1,15 @@
+replicaCount: 1
+
+fullnameOverride: locator
+
+image:
+  repository: locator
+  tag: local
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8000
+
+env:
+  MONGO_URI: mongodb://mongouser:mongopass@mongodb:27017/triangle?authSource=admin

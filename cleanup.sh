@@ -20,25 +20,20 @@ done
 echo "🧼 Cleaning up..."
 
 # Delete Helm releases
-echo "🧹 Deleting Helm release: signal-source"
-helm uninstall signal-source || true
-
-echo "🧹 Deleting Helm release: simulation"
-helm uninstall simulation || true
-
-echo "🧹 Deleting Helm release: mongodb"
-helm uninstall mongodb || true
+for svc in signal-source simulation locator mongodb; do
+  echo "🧹 Deleting Helm release: $svc"
+  helm uninstall "$svc" || true
+done
 
 # Remove Docker images
-echo "🧹 Removing Docker image: signal-source:local"
-docker rmi signal-source:local || true
+for img in signal-source simulation locator; do
+  echo "🧹 Removing Docker image: $img:local"
+  docker rmi "$img:local" || true
+done
 
-echo "🧹 Removing Docker image: simulation:local"
-docker rmi simulation:local || true
-
-# Optionally prune unused Docker stuff
+# Optionally prune Docker system
 if [ "$DOCKER_PRUNE" = true ]; then
-  echo "🗑  Pruning unused Docker images/containers/volumes..."
+  echo "🗑  Pruning unused Docker resources..."
   docker system prune -f
 fi
 
