@@ -73,6 +73,8 @@ VITE_SIGNAL_SOURCE_BASE=/api/signals
 VITE_LOCATOR_BASE=/api/locator
 ```
 
+Note: The first time running this will take time, future runs are much faster (< 1 minute).a
+
 3. Start the application:
 ```bash
 ./run.sh
