@@ -7,7 +7,7 @@ import Grid from './components/Grid';
 import { useState, useEffect } from 'react';
 
 const App = () => {
-  const { towers, signals, detections } = useData();
+  const { towers, signals, detections, loading, error } = useData();
   const [stageSize, setStageSize] = useState(800);
 
   // Adjust stage size based on window size
@@ -48,6 +48,21 @@ const App = () => {
         Signal Triangulation System
       </h1>
 
+      {error && (
+        <div style={{
+          background: 'rgba(244, 67, 54, 0.1)',
+          border: '1px solid rgba(244, 67, 54, 0.3)',
+          borderRadius: '8px',
+          padding: '12px 20px',
+          marginBottom: '20px',
+          color: '#f44336',
+          maxWidth: '80%',
+          textAlign: 'center'
+        }}>
+          {error}
+        </div>
+      )}
+
       <div style={{
         background: 'white',
         borderRadius: '12px',
@@ -75,9 +90,9 @@ const App = () => {
 
             {/* Visualization layers */}
             <Grid width={stageSize} height={stageSize} />
-            <TowerLayer towers={towers} />
-            <DetectionLayer detections={detections} towers={towers} />
-            <SignalLayer signals={signals} />
+            <TowerLayer towers={towers || []} />
+            <SignalLayer signals={signals || []} detections={detections || []} />
+            <DetectionLayer detections={detections || []} towers={towers || []} />
           </Layer>
         </Stage>
       </div>
@@ -90,7 +105,7 @@ const App = () => {
         maxWidth: '600px',
         textShadow: '0 1px 2px rgba(0,0,0,0.3)'
       }}>
-        Real-time signal detection and triangulation visualization
+        {loading ? 'Loading data...' : 'Real-time signal detection and triangulation visualization'}
       </div>
     </div>
   );
