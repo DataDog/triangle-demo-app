@@ -37,16 +37,6 @@ export const TowerLayer: React.FC<Props> = ({ towers }) => {
             fill="#1976D2"
             fontStyle="bold"
           />
-          {/* Active status indicator */}
-          <Circle
-            x={tower.x - 15}
-            y={tower.y}
-            radius={3}
-            fill="#4CAF50"
-            shadowColor="rgba(0,0,0,0.3)"
-            shadowBlur={2}
-            shadowOffset={{ x: 1, y: 1 }}
-          />
         </Group>
       ))}
     </>

@@ -18,6 +18,16 @@ interface DetectionState {
 const DetectionLayer: React.FC<Props> = ({ detections, towers }) => {
   const [activeDetections, setActiveDetections] = useState<Detection[]>([]);
   const [detectionStates, setDetectionStates] = useState<{ [key: string]: DetectionState }>({});
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsVisible(document.visibilityState === 'visible');
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
 
   useEffect(() => {
     // Add detections one at a time with a delay
@@ -25,13 +35,13 @@ const DetectionLayer: React.FC<Props> = ({ detections, towers }) => {
       !activeDetections.some(ad => ad.x === d.x && ad.y === d.y)
     );
 
-    if (newDetections.length > 0) {
+    if (newDetections.length > 0 && isVisible) {
       const timer = setTimeout(() => {
         setActiveDetections(prev => [...prev, newDetections[0]]);
       }, 1000); // Delay between each new detection
       return () => clearTimeout(timer);
     }
-  }, [detections, activeDetections]);
+  }, [detections, activeDetections, isVisible]);
 
   useEffect(() => {
     // Initialize new detections
@@ -49,6 +59,8 @@ const DetectionLayer: React.FC<Props> = ({ detections, towers }) => {
     });
 
     setDetectionStates(newStates);
+
+    if (!isVisible) return;
 
     const interval = setInterval(() => {
       setDetectionStates(prev => {
@@ -94,7 +106,7 @@ const DetectionLayer: React.FC<Props> = ({ detections, towers }) => {
     }, 50);
 
     return () => clearInterval(interval);
-  }, [activeDetections]);
+  }, [activeDetections, isVisible]);
 
   return (
     <>
