@@ -10,12 +10,12 @@ from app.signal_processor import process_signal
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 print("🔧 Initializing OpenTelemetry...")
 tracer_provider = TracerProvider()
-otlp_exporter = OTLPSpanExporter(insecure=True)
+otlp_exporter = OTLPSpanExporter()
 tracer_provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
 trace.set_tracer_provider(tracer_provider)
 

@@ -24,6 +24,18 @@ helm upgrade --install mongodb ./charts/mongodb \
   --set-string password=$MONGO_PASSWORD \
   --set-string database=$MONGO_DB
 
+# Create Datadog secret
+echo "🔑 Creating Datadog secret..."
+kubectl create secret generic datadog-secret \
+  --from-literal=DD_API_KEY=$DD_API_KEY \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+# Deploy OpenTelemetry collector first since other services might need it
+echo "📊 Deploying OpenTelemetry collector..."
+helm upgrade --install otel ./charts/otel \
+  --set-string DD_API_KEY=$DD_API_KEY \
+  --set-string DD_SITE=$DD_SITE
+
 helm upgrade --install simulation ./charts/simulation
 helm upgrade --install signal-source ./charts/signal-source
 helm upgrade --install locator ./charts/locator
