@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "frontend.fullname" . }}
+  labels:
+    app: {{ include "frontend.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "frontend.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "frontend.name" . }}
+    spec:
+      containers:
+        - name: frontend
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 80
+          env:
+            - name: VITE_SIMULATION_BASE
+              value: {{ .Values.env.VITE_SIMULATION_BASE | quote }}
+            - name: VITE_SIGNAL_SOURCE_BASE
+              value: {{ .Values.env.VITE_SIGNAL_SOURCE_BASE | quote }}
+            - name: VITE_LOCATOR_BASE
+              value: {{ .Values.env.VITE_LOCATOR_BASE | quote }}
+

@@ -3,10 +3,11 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-	"locator/models"
 	"locator/logic"
+	"locator/models"
 	"locator/mongo"
+
+	"github.com/gin-gonic/gin"
 )
 
 func HandleBundle(c *gin.Context) {
@@ -16,7 +17,7 @@ func HandleBundle(c *gin.Context) {
 		return
 	}
 
-	detection := logic.Triangulate(bundle)
+	detection := logic.TriangulateFromBundle(bundle)
 	if err := mongo.InsertDetection(detection); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to store detection"})
 		return

@@ -4,7 +4,7 @@ type TowerDetection struct {
 	ID      string  `json:"id"`
 	X       int     `json:"x"`
 	Y       int     `json:"y"`
-	HeardAt int64   `json:"heard_at"`
+	HeardAt float64    `json:"heard_at"`
 }
 
 type SignalBundle struct {
@@ -15,5 +15,5 @@ type SignalBundle struct {
 type Detection struct {
 	X         float64 `json:"x"`
 	Y         float64 `json:"y"`
-	Timestamp int64   `json:"timestamp"`
+	Timestamp float64   `json:"timestamp"`
 }

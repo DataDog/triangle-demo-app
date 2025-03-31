@@ -1,0 +1,16 @@
+replicaCount: 1
+
+image:
+  repository: frontend
+  tag: local
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+
+fullnameOverride: frontend
+env:
+  VITE_SIMULATION_BASE: http://simulation:8000
+  VITE_SIGNAL_SOURCE_BASE: http://signal-source:8000
+  VITE_LOCATOR_BASE: http://locator:8000

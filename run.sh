@@ -5,19 +5,18 @@ echo "▶️  Using Minikube Docker env"
 eval $(minikube docker-env)
 
 echo "📄 Loading environment variables from .env"
-if [ -f .env ]; then
-  set -o allexport
-  source .env
-  set +o allexport
-else
-  echo "❌ .env file not found!"
-  exit 1
-fi
+set -o allexport
+source .env
+set +o allexport
 
 echo "🐳 Building Docker images..."
-docker build -t signal-source:local ./services/signal-source
 docker build -t simulation:local ./services/simulation
+docker build -t signal-source:local ./services/signal-source
 docker build -t locator:local ./services/locator
+docker build -t frontend:local ./services/frontend \
+  --build-arg VITE_SIMULATION_BASE=/api/simulation \
+  --build-arg VITE_SIGNAL_SOURCE_BASE=/api/signals \
+  --build-arg VITE_LOCATOR_BASE=/api/locator
 
 echo "📦 Deploying Helm charts..."
 helm upgrade --install mongodb ./charts/mongodb \
@@ -28,5 +27,10 @@ helm upgrade --install mongodb ./charts/mongodb \
 helm upgrade --install simulation ./charts/simulation
 helm upgrade --install signal-source ./charts/signal-source
 helm upgrade --install locator ./charts/locator
+helm upgrade --install frontend ./charts/frontend
 
-echo "✅ All services deployed."
+echo "🌐 Applying Ingress..."
+kubectl apply -f charts/shared/templates/ingress.yaml
+
+echo "🌍 Use this to access the app:"
+minikube service ingress-nginx-controller -n ingress-nginx --url
