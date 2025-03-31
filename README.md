@@ -4,11 +4,27 @@ A distributed system for real-time signal triangulation and location detection, 
 
 ## Overview
 
-Triangle is a system that simulates, processes, and visualizes signal triangulation in real-time. It consists of multiple microservices working together to:
-1. Generate simulated signal sources
-2. Process signals through multiple towers
-3. Calculate precise locations using triangulation
-4. Visualize the entire process in real-time
+Triangle is a system that simulates, processes, and visualizes signal triangulation in real-time.
+
+A Rust source service simulates sending a loud sound to a simulator.
+
+The Python simulator service receives the sound, and simulates the sound wave reaching several sensor towers. Each tower will "hear" the sound at different times due to the speed of sound.
+
+The simulator service sends the tower locations and the time that each tower heard the sound to the locator service.
+
+The Go locator service uses complex equation systems to "triangulate" the source of the sound. This is calculated based on the differences in sound arrival time and tower locations. This requires very complex math and is useful for things like traces and spans.
+
+Each service also interacts with a MongoDB database.
+
+The source service stores the source signal locations and times.
+
+The simulator service stores the tower locations
+
+The locator service stores its estimated source location
+
+
+
+The frontend reads all these values and displays them on a simple grid. Source signals send out a wave and the towers "triangulate" and plot an estimated source. The system is so accurate that can be hard to tell that it is an estimation.
 
 ## Architecture
 
