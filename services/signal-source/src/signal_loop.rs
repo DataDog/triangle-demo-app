@@ -22,15 +22,15 @@ async fn run_loop(collection: Collection<Signal>, simulation_url: String) {
 
     loop {
         // Generate all random values before any async operations
-        let delay = if rng.gen_ratio(1, 5) {
-            // Rapid signals
-            rng.gen_range(500..1000)
-        } else if rng.gen_ratio(3, 4) {
-            // Normal signals
-            rng.gen_range(2000..4000)
-        } else {
-            // Slower signals
+        let delay = if rng.gen_ratio(1, 8) {
+            // Occasional rapid signals (3-4 seconds)
+            rng.gen_range(3000..4000)
+        } else if rng.gen_ratio(2, 3) {
+            // Normal signals (5-8 seconds)
             rng.gen_range(5000..8000)
+        } else {
+            // Slower signals (10-15 seconds)
+            rng.gen_range(10000..15000)
         };
 
         let signal = generate_signal();

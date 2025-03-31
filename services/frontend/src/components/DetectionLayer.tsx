@@ -9,57 +9,83 @@ interface Props {
   towers: Tower[];
 }
 
+interface DetectionState {
+  pulseSize: number;
+  triangulationProgress: number;
+  fadeOut: number;
+}
+
 const DetectionLayer: React.FC<Props> = ({ detections, towers }) => {
-  const [pulseSizes, setPulseSizes] = useState<{ [key: string]: number }>({});
-  const [triangulationProgress, setTriangulationProgress] = useState<{ [key: string]: number }>({});
+  const [activeDetections, setActiveDetections] = useState<Detection[]>([]);
+  const [detectionStates, setDetectionStates] = useState<{ [key: string]: DetectionState }>({});
+
+  useEffect(() => {
+    // Add detections one at a time with a delay
+    const newDetections = detections.filter(d =>
+      !activeDetections.some(ad => ad.x === d.x && ad.y === d.y)
+    );
+
+    if (newDetections.length > 0) {
+      const timer = setTimeout(() => {
+        setActiveDetections(prev => [...prev, newDetections[0]]);
+      }, 1000); // Delay between each new detection
+      return () => clearTimeout(timer);
+    }
+  }, [detections, activeDetections]);
 
   useEffect(() => {
     // Initialize new detections
-    const newPulseSizes = { ...pulseSizes };
-    const newTriangulationProgress = { ...triangulationProgress };
+    const newStates = { ...detectionStates };
 
-    detections.forEach(detection => {
+    activeDetections.forEach(detection => {
       const key = `${detection.x},${detection.y}`;
-      if (!(key in newPulseSizes)) {
-        newPulseSizes[key] = 0;
-        newTriangulationProgress[key] = 0;
+      if (!(key in newStates)) {
+        newStates[key] = {
+          pulseSize: 0,
+          triangulationProgress: 0,
+          fadeOut: 100
+        };
       }
     });
 
-    setPulseSizes(newPulseSizes);
-    setTriangulationProgress(newTriangulationProgress);
+    setDetectionStates(newStates);
 
     const interval = setInterval(() => {
-      setPulseSizes(prev => {
+      setDetectionStates(prev => {
         const next = { ...prev };
-        let hasActivePulses = false;
+        let hasActiveAnimations = false;
 
+        // Clean up completed animations
+        const activeKeys = activeDetections.map(d => `${d.x},${d.y}`);
         Object.keys(next).forEach(key => {
-          if (next[key] < 20) {
-            next[key] += 1;
-            hasActivePulses = true;
+          if (!activeKeys.includes(key)) {
+            delete next[key];
           }
         });
 
-        if (!hasActivePulses) {
-          clearInterval(interval);
+        // Update all active states
+        for (const key in next) {
+          const state = next[key];
+
+          // Update pulse size
+          if (state.pulseSize < 20) {
+            state.pulseSize += 1;
+            hasActiveAnimations = true;
+          }
+
+          // Update triangulation progress
+          if (state.triangulationProgress < 100) {
+            state.triangulationProgress += 4;
+            hasActiveAnimations = true;
+          }
+          // Start fade out after triangulation completes
+          else if (state.fadeOut > 0) {
+            state.fadeOut -= 2; // Fade out speed
+            hasActiveAnimations = true;
+          }
         }
-        return next;
-      });
 
-      // Update triangulation progress
-      setTriangulationProgress(prev => {
-        const next = { ...prev };
-        let hasActiveTriangulation = false;
-
-        Object.keys(next).forEach(key => {
-          if (next[key] < 100) {
-            next[key] += 2; // Adjust speed of triangulation animation
-            hasActiveTriangulation = true;
-          }
-        });
-
-        if (!hasActiveTriangulation) {
+        if (!hasActiveAnimations) {
           clearInterval(interval);
         }
 
@@ -68,32 +94,35 @@ const DetectionLayer: React.FC<Props> = ({ detections, towers }) => {
     }, 50);
 
     return () => clearInterval(interval);
-  }, [detections]);
+  }, [activeDetections]);
 
   return (
     <>
-      {detections.map((detection, i) => {
+      {activeDetections.map((detection, i) => {
         const key = `${detection.x},${detection.y}`;
-        const pulseSize = pulseSizes[key] || 0;
-        const progress = triangulationProgress[key] || 0;
+        const state = detectionStates[key] || { pulseSize: 0, triangulationProgress: 0, fadeOut: 100 };
+        const { pulseSize, triangulationProgress, fadeOut } = state;
+
+        // Don't render if animation is complete
+        if (fadeOut <= 0) return null;
 
         return (
           <Group key={i}>
             {/* Triangulation lines */}
-            {towers.map((tower, tIndex) => (
+            {triangulationProgress > 20 && fadeOut > 0 && towers.map((tower, tIndex) => (
               <Line
                 key={`${i}-${tIndex}`}
                 points={[tower.x, tower.y, detection.x, detection.y]}
-                stroke="#FFC107"
-                strokeWidth={1}
-                opacity={0.3}
-                dash={[5, 5]}
+                stroke="#FF9800"
+                strokeWidth={1.5}
+                opacity={0.3 * (fadeOut / 100)}
+                dash={[8, 4]}
                 // Only show line up to current progress
                 clipFunc={(ctx: Konva.Context) => {
                   const dx = detection.x - tower.x;
                   const dy = detection.y - tower.y;
                   const length = Math.sqrt(dx * dx + dy * dy);
-                  const progressLength = (length * progress) / 100;
+                  const progressLength = (length * (triangulationProgress - 20)) / 80;
 
                   ctx.beginPath();
                   ctx.moveTo(tower.x, tower.y);
@@ -111,21 +140,24 @@ const DetectionLayer: React.FC<Props> = ({ detections, towers }) => {
               x={detection.x}
               y={detection.y}
               radius={15}
-              fill="rgba(255, 193, 7, 0.2)"
-              stroke="#FFC107"
-              strokeWidth={2}
-              opacity={progress / 100}
+              fill="rgba(255, 152, 0, 0.15)"
+              stroke="#FF9800"
+              strokeWidth={1.5}
+              opacity={(triangulationProgress / 100) * (fadeOut / 100)}
+              shadowColor="rgba(255, 152, 0, 0.2)"
+              shadowBlur={10}
+              shadowOpacity={0.2}
             />
 
             {/* Detection center */}
             <Circle
               x={detection.x}
               y={detection.y}
-              radius={6}
-              fill="#FFC107"
+              radius={5}
+              fill="#FF9800"
               stroke="white"
-              strokeWidth={2}
-              opacity={progress / 100}
+              strokeWidth={1.5}
+              opacity={Math.max(triangulationProgress / 100, 0.4)}
             />
 
             {/* Pulse effect */}
@@ -134,10 +166,10 @@ const DetectionLayer: React.FC<Props> = ({ detections, towers }) => {
                 x={detection.x}
                 y={detection.y}
                 radius={15 + pulseSize * 2}
-                fill="rgba(255, 193, 7, 0.1)"
-                stroke="#FFC107"
+                fill="rgba(255, 152, 0, 0.1)"
+                stroke="#FF9800"
                 strokeWidth={1}
-                opacity={(20 - pulseSize) / 20 * (progress / 100)}
+                opacity={(20 - pulseSize) / 20 * (triangulationProgress / 100)}
               />
             )}
           </Group>
