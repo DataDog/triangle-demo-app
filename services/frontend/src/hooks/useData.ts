@@ -22,6 +22,7 @@ export interface Detection {
   y: number;
   timestamp: number;
 }
+
 export const useData = () => {
   const [towers, setTowers] = useState<Tower[]>([]);
   const [signals, setSignals] = useState<Signal[]>([]);
@@ -29,7 +30,21 @@ export const useData = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let intervalId: number;
+    let isVisible = true;
+
+    const handleVisibilityChange = () => {
+      isVisible = document.visibilityState === 'visible';
+      if (isVisible) {
+        // Clear data when returning to the tab
+        setSignals([]);
+        setDetections([]);
+      }
+    };
+
     const fetchData = async () => {
+      if (!isVisible) return;
+
       try {
         const [tRes, sRes, dRes] = await Promise.all([
           axios.get<Tower[]>(`${SIMULATION_BASE}/towers`),
@@ -47,9 +62,14 @@ export const useData = () => {
       }
     };
 
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     fetchData();
-    const interval = setInterval(fetchData, 5000);
-    return () => clearInterval(interval);
+    intervalId = window.setInterval(fetchData, 5000);
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   return { towers, signals, detections, loading };
