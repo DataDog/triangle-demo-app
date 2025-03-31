@@ -40,6 +40,23 @@ The system consists of the following services:
 
 Each service also has their own README.
 
+## Third-Party Components
+
+This project uses various open-source components. A complete list of third-party components, their origins, licenses, and copyright information can be found in [LICENSE-3rdparty.csv](LICENSE-3rdparty.csv).
+
+### Component Owners
+
+The following team members are responsible for tracking and updating third-party components:
+
+- Frontend Components: [Frontend Team Member]
+- Python Components: [Python Team Member]
+- Go Components: [Go Team Member]
+- Rust Components: [Rust Team Member]
+
+### License Compliance
+
+All third-party components used in this project are licensed under permissive open-source licenses (MIT, Apache-2.0, BSD-3-Clause) that are compatible with our proprietary license.
+
 ## Prerequisites
 
 - Docker and Docker Compose
@@ -73,7 +90,7 @@ VITE_SIGNAL_SOURCE_BASE=/api/signals
 VITE_LOCATOR_BASE=/api/locator
 ```
 
-Note: The first time running this will take time, future runs are much faster (< 1 minute).a
+Note: The first time running this will take time, future runs are much faster (< 1 minute).
 
 3. Start the application:
 ```bash
@@ -122,3 +139,17 @@ Use `./cleanup.sh -d` to also prune unused Docker resources.
 ├── run.sh          # Deployment script
 └── cleanup.sh      # Cleanup script
 ```
+
+## Contributing
+
+1. Create a new branch for your feature
+2. Make your changes
+3. Submit a pull request
+
+## License
+
+This project is proprietary and confidential. See [LICENSE](LICENSE) for details.
+
+## Third-Party Licenses
+
+This project includes third-party open-source components. See [LICENSE-3rdparty.csv](LICENSE-3rdparty.csv) for a complete list of components and their licenses.
