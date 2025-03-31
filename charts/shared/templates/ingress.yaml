@@ -1,0 +1,38 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: triangle-ingress
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /api/simulation/towers
+            pathType: Prefix
+            backend:
+              service:
+                name: simulation
+                port:
+                  number: 8000
+
+          - path: /api/signals/signals
+            pathType: Prefix
+            backend:
+              service:
+                name: signal-source
+                port:
+                  number: 8000
+
+          - path: /api/locator/detections
+            pathType: Prefix
+            backend:
+              service:
+                name: locator
+                port:
+                  number: 8000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80

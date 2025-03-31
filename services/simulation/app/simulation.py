@@ -3,27 +3,36 @@ import math
 from app.models import Tower
 
 WORLD_SIZE = 1000
-MIN_DISTANCE = 200
+PADDING = 200  # Increased padding from edges for better coverage
+RADIUS = 300   # Distance from center to tower (controls triangle size)
 
+def generate_towers():
+    # Calculate center point
+    center_x = WORLD_SIZE // 2
+    center_y = WORLD_SIZE // 2
 
-def distance(a, b):
-    return math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2)
+    # Generate three points in an equilateral triangle
+    # Using angles: 90° (top), 210° (bottom left), 330° (bottom right)
+    base_positions = [
+        # Top center
+        (center_x, center_y - RADIUS),
+        # Bottom left
+        (center_x - int(RADIUS * math.cos(math.radians(30))),
+         center_y + int(RADIUS * math.sin(math.radians(30)))),
+        # Bottom right
+        (center_x + int(RADIUS * math.cos(math.radians(30))),
+         center_y + int(RADIUS * math.sin(math.radians(30))))
+    ]
 
-def generate_towers(n=3):
+    # Add small random jitter (much smaller than before)
+    JITTER = 30  # Reduced jitter for more stable positioning
     towers = []
-    attempts = 0
-
-    while len(towers) < n and attempts < 1000:
-        x = random.randint(0, WORLD_SIZE)
-        y = random.randint(0, WORLD_SIZE)
-        new_tower = Tower(id=f"tower-{len(towers)+1}", x=x, y=y)
-
-        if all(distance(new_tower, existing) >= MIN_DISTANCE for existing in towers):
-            towers.append(new_tower)
-        attempts += 1
-
-    if len(towers) < n:
-        raise Exception("Could not place all towers with required distance constraint")
+    for i, (base_x, base_y) in enumerate(base_positions):
+        x = max(PADDING, min(WORLD_SIZE - PADDING,
+                base_x + random.randint(-JITTER, JITTER)))
+        y = max(PADDING, min(WORLD_SIZE - PADDING,
+                base_y + random.randint(-JITTER, JITTER)))
+        towers.append(Tower(id=f"tower-{i+1}", x=x, y=y))
 
     return towers
 

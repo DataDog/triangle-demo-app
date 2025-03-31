@@ -3,6 +3,10 @@ use crate::signal::generate_signal;
 use mongodb::Collection;
 use reqwest::Client as HttpClient;
 use tokio::time::{sleep, Duration};
+use rand::rngs::StdRng;
+use rand::SeedableRng;
+use rand::thread_rng;
+use rand::Rng;
 
 pub fn start_signal_loop(collection: Collection<Signal>, simulation_url: String) {
     tokio::spawn(run_loop(collection, simulation_url));
@@ -13,7 +17,22 @@ async fn run_loop(collection: Collection<Signal>, simulation_url: String) {
     let health_url = format!("{}/healthz", simulation_url.trim_end_matches("/signal"));
     wait_for_simulation(&http_client, &health_url).await;
 
+    // Create a thread-safe RNG
+    let mut rng = StdRng::from_rng(thread_rng()).unwrap();
+
     loop {
+        // Generate all random values before any async operations
+        let delay = if rng.gen_ratio(1, 5) {
+            // Rapid signals
+            rng.gen_range(500..1000)
+        } else if rng.gen_ratio(3, 4) {
+            // Normal signals
+            rng.gen_range(2000..4000)
+        } else {
+            // Slower signals
+            rng.gen_range(5000..8000)
+        };
+
         let signal = generate_signal();
         println!("📡 Generated signal: {:?}", signal);
 
@@ -27,7 +46,7 @@ async fn run_loop(collection: Collection<Signal>, simulation_url: String) {
             eprintln!("❌ Failed to send to simulation: {}", err);
         }
 
-        sleep(Duration::from_secs(5)).await;
+        sleep(Duration::from_millis(delay)).await;
     }
 }
 

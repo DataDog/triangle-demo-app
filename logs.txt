@@ -1,0 +1,194 @@
+✅ Connected to MongoDB
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] POST   /bundle                   --> locator/handlers.HandleBundle (3 handlers)
+[GIN-debug] GET    /healthz                  --> locator/handlers.Healthz (3 handlers)
+[GIN-debug] GET    /api/locator/detections   --> locator/handlers.GetDetections (3 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :8000
+[GIN] 2025/03/31 - 07:53:16 | 200 |    5.794417ms |      10.244.0.1 | GET      "/api/locator/detections"
+[triangulation] Tower order: T1(%!f(int=594),%!f(int=1000)) T2(%!f(int=205),%!f(int=66)) T3(%!f(int=810),%!f(int=12))
+[triangulation] Timestamps: t1=1743407600.810 t2=1743407602.519 t3=1743407602.625
+[triangulation] Time differences: Δt2=1.7090s Δt3=1.8150s
+[triangulation] Distance differences: d12=586.19m d13=622.54m
+[solver] rel B=(-389.00, -934.00)  rel C=(216.00, -988.00)
+[solver] tower distances: AB=1011.77m  AC=1011.34m
+[solver] comparing TDoA-derived distances: |d12|=586.19m  |d13|=622.54m
+[solver] determinant = 2.2901
+[solver] linear solution (x,y)=(50.00, 950.00) residual=56697.405765
+[solver] trying hybrid approach with 3 initial points
+[triangulation] ❌ Nonlinear solver failed: no solutions converged with acceptable residual
+[solver] rel B=(-389.00, -934.00)  rel C=(216.00, -988.00)
+[solver] tower distances: AB=1011.77m  AC=1011.34m
+[solver] comparing TDoA-derived distances: |d12|=586.19m  |d13|=622.54m
+[solver] determinant = 2.2901
+[solver] linear solution (x,y)=(50.00, 950.00) residual=56697.405765
+[GIN] 2025/03/31 - 07:53:20 | 200 |    5.715458ms |     10.244.2.54 | POST     "/bundle"
+[GIN] 2025/03/31 - 07:53:21 | 200 |     859.209µs |      10.244.0.1 | GET      "/api/locator/detections"
+[triangulation] Tower order: T1(%!f(int=205),%!f(int=66)) T2(%!f(int=594),%!f(int=1000)) T3(%!f(int=810),%!f(int=12))
+[triangulation] Timestamps: t1=1743407606.471 t2=1743407607.090 t3=1743407607.356
+[triangulation] Time differences: Δt2=0.6190s Δt3=0.8850s
+[triangulation] Distance differences: d12=212.32m d13=303.56m
+[solver] rel B=(389.00, 934.00)  rel C=(605.00, -54.00)
+[solver] tower distances: AB=1011.77m  AC=607.41m
+[solver] comparing TDoA-derived distances: |d12|=212.32m  |d13|=303.56m
+[solver] determinant = -2.2901
+[solver] linear solution (x,y)=(950.00, 50.00) residual=819855.451747
+[solver] trying hybrid approach with 3 initial points
+[triangulation] ❌ Nonlinear solver failed: no solutions converged with acceptable residual
+[solver] rel B=(389.00, 934.00)  rel C=(605.00, -54.00)
+[solver] tower distances: AB=1011.77m  AC=607.41m
+[solver] comparing TDoA-derived distances: |d12|=212.32m  |d13|=303.56m
+[solver] determinant = -2.2901
+[solver] linear solution (x,y)=(950.00, 50.00) residual=819855.451747
+[GIN] 2025/03/31 - 07:53:25 | 200 |    1.748542ms |     10.244.2.54 | POST     "/bundle"
+[GIN] 2025/03/31 - 07:53:26 | 200 |       1.251ms |      10.244.0.1 | GET      "/api/locator/detections"
+[triangulation] Tower order: T1(%!f(int=594),%!f(int=1000)) T2(%!f(int=810),%!f(int=12)) T3(%!f(int=205),%!f(int=66))
+[triangulation] Timestamps: t1=1743407610.989 t2=1743407612.597 t3=1743407612.703
+[triangulation] Time differences: Δt2=1.6080s Δt3=1.7140s
+[triangulation] Distance differences: d12=551.54m d13=587.90m
+[solver] rel B=(216.00, -988.00)  rel C=(-389.00, -934.00)
+[solver] tower distances: AB=1011.34m  AC=1011.77m
+[solver] comparing TDoA-derived distances: |d12|=551.54m  |d13|=587.90m
+[solver] determinant = -2.2901
+[solver] linear solution (x,y)=(950.00, 950.00) residual=44936.941961
+[solver] trying hybrid approach with 3 initial points
+[triangulation] ❌ Nonlinear solver failed: no solutions converged with acceptable residual
+[solver] rel B=(216.00, -988.00)  rel C=(-389.00, -934.00)
+[solver] tower distances: AB=1011.34m  AC=1011.77m
+[solver] comparing TDoA-derived distances: |d12|=551.54m  |d13|=587.90m
+[solver] determinant = -2.2901
+[solver] linear solution (x,y)=(950.00, 950.00) residual=44936.941961
+[GIN] 2025/03/31 - 07:53:30 | 200 |    2.226209ms |     10.244.2.54 | POST     "/bundle"
+[GIN] 2025/03/31 - 07:53:31 | 200 |     541.625µs |      10.244.0.1 | GET      "/api/locator/detections"
+[triangulation] Tower order: T1(%!f(int=594),%!f(int=1000)) T2(%!f(int=205),%!f(int=66)) T3(%!f(int=810),%!f(int=12))
+[triangulation] Timestamps: t1=1743407616.371 t2=1743407617.374 t3=1743407617.459
+[triangulation] Time differences: Δt2=1.0030s Δt3=1.0880s
+[triangulation] Distance differences: d12=344.03m d13=373.18m
+[solver] rel B=(-389.00, -934.00)  rel C=(216.00, -988.00)
+[solver] tower distances: AB=1011.77m  AC=1011.34m
+[solver] comparing TDoA-derived distances: |d12|=344.03m  |d13|=373.18m
+[solver] determinant = 2.2901
+[solver] linear solution (x,y)=(50.00, 950.00) residual=82862.603020
+[solver] trying hybrid approach with 3 initial points
+[triangulation] ❌ Nonlinear solver failed: no solutions converged with acceptable residual
+[solver] rel B=(-389.00, -934.00)  rel C=(216.00, -988.00)
+[solver] tower distances: AB=1011.77m  AC=1011.34m
+[solver] comparing TDoA-derived distances: |d12|=344.03m  |d13|=373.18m
+[solver] determinant = 2.2901
+[solver] linear solution (x,y)=(50.00, 950.00) residual=82862.603020
+[GIN] 2025/03/31 - 07:53:35 | 200 |    2.227458ms |     10.244.2.54 | POST     "/bundle"
+[GIN] 2025/03/31 - 07:53:36 | 200 |    1.753625ms |      10.244.0.1 | GET      "/api/locator/detections"
+[triangulation] Tower order: T1(%!f(int=205),%!f(int=66)) T2(%!f(int=810),%!f(int=12)) T3(%!f(int=594),%!f(int=1000))
+[triangulation] Timestamps: t1=1743407620.853 t2=1743407622.197 t3=1743407622.985
+[triangulation] Time differences: Δt2=1.3440s Δt3=2.1320s
+[triangulation] Distance differences: d12=460.99m d13=731.28m
+[solver] rel B=(605.00, -54.00)  rel C=(389.00, 934.00)
+[solver] tower distances: AB=607.41m  AC=1011.77m
+[solver] comparing TDoA-derived distances: |d12|=460.99m  |d13|=731.28m
+[solver] determinant = 2.2901
+[solver] linear solution (x,y)=(316.39, 50.00) residual=27448.359240
+[solver] trying hybrid approach with 3 initial points
+[triangulation] ❌ Nonlinear solver failed: no solutions converged with acceptable residual
+[solver] rel B=(605.00, -54.00)  rel C=(389.00, 934.00)
+[solver] tower distances: AB=607.41m  AC=1011.77m
+[solver] comparing TDoA-derived distances: |d12|=460.99m  |d13|=731.28m
+[solver] determinant = 2.2901
+[solver] linear solution (x,y)=(316.39, 50.00) residual=27448.359240
+[GIN] 2025/03/31 - 07:53:40 | 200 |    2.156958ms |     10.244.2.54 | POST     "/bundle"
+[GIN] 2025/03/31 - 07:53:42 | 200 |       1.797ms |      10.244.0.1 | GET      "/api/locator/detections"
+[triangulation] Tower order: T1(%!f(int=594),%!f(int=1000)) T2(%!f(int=810),%!f(int=12)) T3(%!f(int=205),%!f(int=66))
+[triangulation] Timestamps: t1=1743407626.233 t2=1743407627.729 t3=1743407627.859
+[triangulation] Time differences: Δt2=1.4960s Δt3=1.6260s
+[triangulation] Distance differences: d12=513.13m d13=557.72m
+[solver] rel B=(216.00, -988.00)  rel C=(-389.00, -934.00)
+[solver] tower distances: AB=1011.34m  AC=1011.77m
+[solver] comparing TDoA-derived distances: |d12|=513.13m  |d13|=557.72m
+[solver] determinant = -2.2901
+[solver] linear solution (x,y)=(950.00, 950.00) residual=62790.430279
+[solver] trying hybrid approach with 3 initial points
+[triangulation] ❌ Nonlinear solver failed: no solutions converged with acceptable residual
+[solver] rel B=(216.00, -988.00)  rel C=(-389.00, -934.00)
+[solver] tower distances: AB=1011.34m  AC=1011.77m
+[solver] comparing TDoA-derived distances: |d12|=513.13m  |d13|=557.72m
+[solver] determinant = -2.2901
+[solver] linear solution (x,y)=(950.00, 950.00) residual=62790.430279
+[GIN] 2025/03/31 - 07:53:45 | 200 |     2.31725ms |     10.244.2.54 | POST     "/bundle"
+[GIN] 2025/03/31 - 07:53:47 | 200 |    1.254334ms |      10.244.0.1 | GET      "/api/locator/detections"
+[triangulation] Tower order: T1(%!f(int=205),%!f(int=66)) T2(%!f(int=594),%!f(int=1000)) T3(%!f(int=810),%!f(int=12))
+[triangulation] Timestamps: t1=1743407632.091 t2=1743407632.113 t3=1743407632.894
+[triangulation] Time differences: Δt2=0.0220s Δt3=0.8030s
+[triangulation] Distance differences: d12=7.55m d13=275.43m
+[solver] rel B=(389.00, 934.00)  rel C=(605.00, -54.00)
+[solver] tower distances: AB=1011.77m  AC=607.41m
+[solver] comparing TDoA-derived distances: |d12|=7.55m  |d13|=275.43m
+[solver] determinant = -2.2901
+[solver] linear solution (x,y)=(950.00, 50.00) residual=835098.612680
+[solver] trying hybrid approach with 3 initial points
+[triangulation] ❌ Nonlinear solver failed: no solutions converged with acceptable residual
+[solver] rel B=(389.00, 934.00)  rel C=(605.00, -54.00)
+[solver] tower distances: AB=1011.77m  AC=607.41m
+[solver] comparing TDoA-derived distances: |d12|=7.55m  |d13|=275.43m
+[solver] determinant = -2.2901
+[solver] linear solution (x,y)=(950.00, 50.00) residual=835098.612680
+[GIN] 2025/03/31 - 07:53:50 | 200 |    2.709833ms |     10.244.2.54 | POST     "/bundle"
+[GIN] 2025/03/31 - 07:53:52 | 200 |    1.237792ms |      10.244.0.1 | GET      "/api/locator/detections"
+[triangulation] Tower order: T1(%!f(int=594),%!f(int=1000)) T2(%!f(int=810),%!f(int=12)) T3(%!f(int=205),%!f(int=66))
+[triangulation] Timestamps: t1=1743407636.526 t2=1743407637.668 t3=1743407637.963
+[triangulation] Time differences: Δt2=1.1420s Δt3=1.4370s
+[triangulation] Distance differences: d12=391.71m d13=492.89m
+[solver] rel B=(216.00, -988.00)  rel C=(-389.00, -934.00)
+[solver] tower distances: AB=1011.34m  AC=1011.77m
+[solver] comparing TDoA-derived distances: |d12|=391.71m  |d13|=492.89m
+[solver] determinant = -2.2901
+[solver] linear solution (x,y)=(950.00, 950.00) residual=131104.046114
+[solver] trying hybrid approach with 3 initial points
+[triangulation] ❌ Nonlinear solver failed: no solutions converged with acceptable residual
+[solver] rel B=(216.00, -988.00)  rel C=(-389.00, -934.00)
+[solver] tower distances: AB=1011.34m  AC=1011.77m
+[solver] comparing TDoA-derived distances: |d12|=391.71m  |d13|=492.89m
+[solver] determinant = -2.2901
+[solver] linear solution (x,y)=(950.00, 950.00) residual=131104.046114
+[GIN] 2025/03/31 - 07:53:55 | 200 |    1.704125ms |     10.244.2.54 | POST     "/bundle"
+[GIN] 2025/03/31 - 07:53:57 | 200 |    3.644917ms |      10.244.0.1 | GET      "/api/locator/detections"
+[triangulation] Tower order: T1(%!f(int=594),%!f(int=1000)) T2(%!f(int=810),%!f(int=12)) T3(%!f(int=205),%!f(int=66))
+[triangulation] Timestamps: t1=1743407641.684 t2=1743407642.624 t3=1743407642.897
+[triangulation] Time differences: Δt2=0.9400s Δt3=1.2130s
+[triangulation] Distance differences: d12=322.42m d13=416.06m
+[solver] rel B=(216.00, -988.00)  rel C=(-389.00, -934.00)
+[solver] tower distances: AB=1011.34m  AC=1011.77m
+[solver] comparing TDoA-derived distances: |d12|=322.42m  |d13|=416.06m
+[solver] determinant = -2.2901
+[solver] linear solution (x,y)=(950.00, 950.00) residual=215797.100946
+[solver] trying hybrid approach with 3 initial points
+[triangulation] ❌ Nonlinear solver failed: no solutions converged with acceptable residual
+[solver] rel B=(216.00, -988.00)  rel C=(-389.00, -934.00)
+[solver] tower distances: AB=1011.34m  AC=1011.77m
+[solver] comparing TDoA-derived distances: |d12|=322.42m  |d13|=416.06m
+[solver] determinant = -2.2901
+[solver] linear solution (x,y)=(950.00, 950.00) residual=215797.100946
+[GIN] 2025/03/31 - 07:54:00 | 200 |    2.182833ms |     10.244.2.54 | POST     "/bundle"
+[GIN] 2025/03/31 - 07:54:02 | 200 |    1.777458ms |      10.244.0.1 | GET      "/api/locator/detections"
+[triangulation] Tower order: T1(%!f(int=594),%!f(int=1000)) T2(%!f(int=810),%!f(int=12)) T3(%!f(int=205),%!f(int=66))
+[triangulation] Timestamps: t1=1743407646.971 t2=1743407647.521 t3=1743407647.592
+[triangulation] Time differences: Δt2=0.5500s Δt3=0.6210s
+[triangulation] Distance differences: d12=188.65m d13=213.00m
+[solver] rel B=(216.00, -988.00)  rel C=(-389.00, -934.00)
+[solver] tower distances: AB=1011.34m  AC=1011.77m
+[solver] comparing TDoA-derived distances: |d12|=188.65m  |d13|=213.00m
+[solver] determinant = -2.2901
+[solver] linear solution (x,y)=(950.00, 950.00) residual=500745.800825
+[solver] trying hybrid approach with 3 initial points
+[triangulation] ❌ Nonlinear solver failed: no solutions converged with acceptable residual
+[solver] rel B=(216.00, -988.00)  rel C=(-389.00, -934.00)
+[solver] tower distances: AB=1011.34m  AC=1011.77m
+[solver] comparing TDoA-derived distances: |d12|=188.65m  |d13|=213.00m
+[solver] determinant = -2.2901
+[solver] linear solution (x,y)=(950.00, 950.00) residual=500745.800825
+[GIN] 2025/03/31 - 07:54:05 | 200 |    2.142791ms |     10.244.2.54 | POST     "/bundle"
+[GIN] 2025/03/31 - 07:54:07 | 200 |    1.104125ms |      10.244.0.1 | GET      "/api/locator/detections"

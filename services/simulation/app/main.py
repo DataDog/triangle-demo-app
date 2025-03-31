@@ -18,8 +18,9 @@ async def receive_signal(signal: Signal):
     await process_signal(signal, db)
     return {"status": "received"}
 
-@app.get("/towers")
-async def get_towers():
+@app.get("/api/simulation/towers")
+async def get_towers(request: Request):
+    print(f"📥 Simulation received request: {request.url.path}")
     db = get_db()
     towers_cursor = db["towers"].find()
     towers = [Tower(**tower) async for tower in towers_cursor]
