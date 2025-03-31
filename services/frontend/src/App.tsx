@@ -4,28 +4,45 @@ import TowerLayer from './components/TowerLayer';
 import SignalLayer from './components/SignalLayer';
 import DetectionLayer from './components/DetectionLayer';
 import Grid from './components/Grid';
+import { useState, useEffect } from 'react';
 
 const App = () => {
   const { towers, signals, detections } = useData();
-  const stageSize = 1000;
+  const [stageSize, setStageSize] = useState(800);
+
+  // Adjust stage size based on window size
+  useEffect(() => {
+    const updateSize = () => {
+      const minSize = Math.min(window.innerWidth - 80, window.innerHeight - 200);
+      setStageSize(Math.min(1000, Math.max(400, minSize)));
+    };
+
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
 
   return (
     <div style={{
-      padding: '20px',
-      background: 'linear-gradient(to bottom, #1a237e, #000)',
       minHeight: '100vh',
-      color: 'white',
+      width: '100%',
+      background: 'linear-gradient(to bottom, #1a237e, #000)',
       display: 'flex',
       flexDirection: 'column',
-      alignItems: 'center'
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px'
     }}>
       <h1 style={{
-        marginBottom: '20px',
-        fontSize: '2.5em',
+        marginBottom: '30px',
+        fontSize: 'clamp(1.5em, 4vw, 2.5em)',
         fontWeight: 'bold',
+        color: 'white',
         display: 'flex',
         alignItems: 'center',
-        gap: '12px'
+        gap: '12px',
+        textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+        textAlign: 'center'
       }}>
         <span role="img" aria-label="satellite" style={{ fontSize: '1.2em' }}>📡</span>
         Signal Triangulation System
@@ -35,9 +52,12 @@ const App = () => {
         background: 'white',
         borderRadius: '12px',
         padding: '20px',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
         maxWidth: '100%',
-        overflow: 'auto'
+        aspectRatio: '1',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
       }}>
         <Stage width={stageSize} height={stageSize}>
           <Layer>
@@ -48,6 +68,9 @@ const App = () => {
               width={stageSize}
               height={stageSize}
               fill="#FAFAFA"
+              shadowColor="rgba(0,0,0,0.1)"
+              shadowBlur={20}
+              shadowOffset={{ x: 0, y: 2 }}
             />
 
             {/* Visualization layers */}
@@ -61,10 +84,11 @@ const App = () => {
 
       <div style={{
         marginTop: '20px',
-        color: 'rgba(255,255,255,0.8)',
-        fontSize: '0.9em',
+        color: 'rgba(255,255,255,0.9)',
+        fontSize: 'clamp(0.8em, 2vw, 1em)',
         textAlign: 'center',
-        maxWidth: '600px'
+        maxWidth: '600px',
+        textShadow: '0 1px 2px rgba(0,0,0,0.3)'
       }}>
         Real-time signal detection and triangulation visualization
       </div>
