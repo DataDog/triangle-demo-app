@@ -1,14 +1,35 @@
+import os
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from app.db import get_db
 from app.simulation import initialize_towers
 from app.models import Signal, Tower
 from app.signal_processor import process_signal
-import os
 
+# Initialize OpenTelemetry
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
+print("🔧 Initializing OpenTelemetry...")
+tracer_provider = TracerProvider()
+otlp_exporter = OTLPSpanExporter(insecure=True)
+tracer_provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
+trace.set_tracer_provider(tracer_provider)
+
+# Create FastAPI app
 app = FastAPI()
+
+# Instrument FastAPI
+print("🔧 Instrumenting FastAPI...")
+FastAPIInstrumentor.instrument_app(app)
+print("✅ FastAPI instrumented")
 
 @app.on_event("startup")
 async def on_startup():
+    # Initialize database
     db = get_db()
     await initialize_towers(db)
 
@@ -26,7 +47,6 @@ async def get_towers(request: Request):
     towers = [Tower(**tower) async for tower in towers_cursor]
     return towers
 
-# Health check, make sure that mongodb is working before startup
 @app.get("/healthz")
 async def healthz():
     try:
@@ -35,3 +55,14 @@ async def healthz():
         return {"status": "ok"}
     except Exception:
         return JSONResponse(status_code=503, content={"status": "unhealthy"})
+
+@app.get("/signal/healthz")
+async def signal_healthz():
+    """Health check endpoint for the signal processing service."""
+    try:
+        db = get_db()
+        await db["towers"].find_one()
+        return {"status": "ok"}
+    except Exception:
+        return JSONResponse(status_code=503, content={"status": "unhealthy"})
+

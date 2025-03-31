@@ -13,3 +13,11 @@ service:
 
 env:
   MONGO_URI: mongodb://mongouser:mongopass@mongodb:27017/triangle?authSource=admin
+  OTEL_SERVICE_NAME: "locator-service"
+  OTEL_TRACES_EXPORTER: "otlp"
+  OTEL_METRICS_EXPORTER: "otlp"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+  OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+  OTEL_PROPAGATORS: "tracecontext,baggage"
+  OTEL_SDK_DISABLED: "false"
+  OTEL_TRACES_SAMPLER: "parentbased_always_on"

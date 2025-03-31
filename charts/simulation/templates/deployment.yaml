@@ -25,6 +25,18 @@ spec:
               value: {{ .Values.env.MONGO_URI | quote }}
             - name: MONGO_DB
               value: {{ .Values.env.MONGO_DB | quote }}
+            - name: OTEL_SERVICE_NAME
+              value: "simulation-service"
+            - name: OTEL_TRACES_EXPORTER
+              value: "otlp"
+            - name: OTEL_METRICS_EXPORTER
+              value: "otlp"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.env.OTEL_EXPORTER_OTLP_ENDPOINT | quote }}
+            - name: OTEL_PROPAGATORS
+              value: "tracecontext,baggage"
+            - name: LOCATOR_URL
+              value: {{ .Values.env.LOCATOR_URL | quote }}
           readinessProbe:
             httpGet:
               path: /healthz

@@ -11,5 +11,15 @@ service:
 fullnameOverride: simulation
 
 env:
-  MONGO_URI: mongodb://mongouser:mongopass@mongodb:27017/triangle?authSource=admin
-  MONGO_DB: triangle
+  MONGO_URI: "mongodb://mongouser:mongopass@mongodb:27017/triangle?authSource=admin"
+  MONGO_DB: "triangle"
+  OTEL_SERVICE_NAME: "simulation-service"
+  OTEL_TRACES_EXPORTER: "otlp"
+  OTEL_METRICS_EXPORTER: "otlp"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+  OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "http://otel-collector:4317"
+  OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+  OTEL_PROPAGATORS: "tracecontext,baggage"
+  OTEL_SDK_DISABLED: "false"
+  OTEL_TRACES_SAMPLER: "parentbased_always_on"
+  LOCATOR_URL: "http://locator:8000/bundle"

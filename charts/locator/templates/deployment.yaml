@@ -14,6 +14,7 @@ spec:
       labels:
         app: {{ include "locator.name" . }}
     spec:
+      shareProcessNamespace: true
       containers:
         - name: locator
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -23,3 +24,29 @@ spec:
           env:
             - name: MONGO_URI
               value: {{ .Values.env.MONGO_URI | quote }}
+            - name: OTEL_SERVICE_NAME
+              value: "locator-service"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.env.OTEL_EXPORTER_OTLP_ENDPOINT | quote }}
+            - name: OTEL_PROPAGATORS
+              value: "tracecontext,baggage"
+        - name: otel-auto-instrumentation
+          image: otel/autoinstrumentation-go:latest
+          imagePullPolicy: Always
+          env:
+            - name: OTEL_GO_AUTO_TARGET_EXE
+              value: "/app/locator"
+            - name: OTEL_SERVICE_NAME
+              value: "locator-service"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.env.OTEL_EXPORTER_OTLP_ENDPOINT | quote }}
+            - name: OTEL_PROPAGATORS
+              value: "tracecontext,baggage"
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: app-volume
+              mountPath: /app
+      volumes:
+        - name: app-volume
+          emptyDir: {}
