@@ -1,6 +1,8 @@
 # Triangle Signal Triangulation System
 
-A distributed system for real-time signal triangulation and location detection, built with modern microservices architecture.
+This is a demo app, not meant to be used in production.
+
+A distributed system for real-time signal triangulation and location detection, built with modern microservices architecture. 
 
 ## Overview
 
