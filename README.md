@@ -166,7 +166,7 @@ Use `./cleanup.sh -d` to also prune unused Docker resources.
 
 ## License
 
-This project is proprietary and confidential. See [LICENSE](LICENSE) for details.
+See [LICENSE](LICENSE) for details.
 
 ## Third-Party Licenses
 
