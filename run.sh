@@ -2,9 +2,9 @@
 set -e
 
 echo "🧹 Cleaning up previous deployments..."
-kubectl delete deployment --all
-kubectl delete svc --all
-kubectl delete ingress --all
+kubectl delete deployment --all -n ${KUBERNETES_NAMESPACE:-default}
+kubectl delete svc --all -n ${KUBERNETES_NAMESPACE:-default}
+kubectl delete ingress --all -n ${KUBERNETES_NAMESPACE:-default}
 
 echo "▶️  Using Minikube Docker env"
 eval $(minikube docker-env)
@@ -36,7 +36,8 @@ docker build -t frontend:local ./services/frontend
 echo "📦 Deploying Helm charts..."
 
 # Common Helm values for all charts
-HELM_GLOBAL_VALUES="--set mongodb.auth.username=$MONGO_USERNAME \
+HELM_GLOBAL_VALUES="--set global.namespace=${KUBERNETES_NAMESPACE:-default} \
+  --set mongodb.auth.username=$MONGO_USERNAME \
   --set mongodb.auth.password=$MONGO_PASSWORD \
   --set mongodb.auth.database=$MONGO_DB \
   --set global.datadog.apiKey=$DD_API_KEY \
@@ -45,6 +46,7 @@ HELM_GLOBAL_VALUES="--set mongodb.auth.username=$MONGO_USERNAME \
 # Deploy MongoDB
 echo "🚀 Deploying MongoDB..."
 helm upgrade --install mongodb ./charts/mongodb \
+  --namespace ${KUBERNETES_NAMESPACE:-default} \
   --set-string mongodb.auth.username=$MONGO_USERNAME \
   --set-string mongodb.auth.password=$MONGO_PASSWORD \
   --set-string mongodb.auth.database=$MONGO_DB
@@ -52,37 +54,80 @@ helm upgrade --install mongodb ./charts/mongodb \
 # Create Datadog secret
 echo "🔑 Creating Datadog secret..."
 kubectl create secret generic datadog-secret \
+  --namespace ${KUBERNETES_NAMESPACE:-default} \
   --from-literal=DD_API_KEY=$DD_API_KEY \
   --dry-run=client -o yaml | kubectl apply -f -
 
 # Deploy OpenTelemetry Collector
 echo "🚀 Deploying OpenTelemetry Collector..."
+# First, delete any existing cluster-scoped resources
+kubectl delete clusterrole otel-collector --ignore-not-found
+kubectl delete clusterrolebinding otel-collector --ignore-not-found
+
+# Then deploy the collector
 helm upgrade --install otel ./charts/otel \
+    --namespace ${KUBERNETES_NAMESPACE:-default} \
     -f ./charts/shared/values.yaml \
     $HELM_GLOBAL_VALUES
 
 # Deploy services
+echo "🚀 Deploying services..."
 helm upgrade --install simulation ./charts/simulation \
+    --namespace ${KUBERNETES_NAMESPACE:-default} \
     -f ./charts/shared/values.yaml \
     $HELM_GLOBAL_VALUES
 
 helm upgrade --install signal-source ./charts/signal-source \
+    --namespace ${KUBERNETES_NAMESPACE:-default} \
     -f ./charts/shared/values.yaml \
     $HELM_GLOBAL_VALUES
 
 helm upgrade --install locator ./charts/locator \
+    --namespace ${KUBERNETES_NAMESPACE:-default} \
     -f ./charts/shared/values.yaml \
     $HELM_GLOBAL_VALUES
 
 helm upgrade --install frontend ./charts/frontend \
+    --namespace ${KUBERNETES_NAMESPACE:-default} \
     -f ./charts/shared/values.yaml \
     $HELM_GLOBAL_VALUES
 
+# Wait for deployments to be ready
+echo "⏳ Waiting for deployments to be ready..."
+kubectl wait --for=condition=available --timeout=300s deployment/frontend -n ${KUBERNETES_NAMESPACE:-default}
+kubectl wait --for=condition=available --timeout=300s deployment/simulation -n ${KUBERNETES_NAMESPACE:-default}
+kubectl wait --for=condition=available --timeout=300s deployment/signal-source -n ${KUBERNETES_NAMESPACE:-default}
+kubectl wait --for=condition=available --timeout=300s deployment/locator -n ${KUBERNETES_NAMESPACE:-default}
+
+# Wait for pods to be ready
+echo "⏳ Waiting for pods to be ready..."
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=frontend -n ${KUBERNETES_NAMESPACE:-default} --timeout=300s
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=simulation -n ${KUBERNETES_NAMESPACE:-default} --timeout=300s
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=signal-source -n ${KUBERNETES_NAMESPACE:-default} --timeout=300s
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=locator -n ${KUBERNETES_NAMESPACE:-default} --timeout=300s
+
 echo "🌐 Applying Ingress..."
-kubectl apply -f charts/shared/templates/ingress.yaml
+# Process the ingress template with helm and apply it
+helm template ingress ./charts/shared \
+  --namespace ${KUBERNETES_NAMESPACE:-default} \
+  -f ./charts/shared/values.yaml \
+  --set global.namespace=${KUBERNETES_NAMESPACE:-default} \
+  --show-only templates/ingress.yaml | kubectl apply -f -
 
-echo "🌍 Use this to access the app:"
-minikube service ingress-nginx-controller -n ingress-nginx --url
+# Function to clean up port forwarding on script exit
+cleanup() {
+    echo "🧹 Cleaning up port forwarding..."
+    kill $(jobs -p) 2>/dev/null
+    exit 0
+}
 
-# Keep the script running to maintain services
+# Set up trap for cleanup on script termination
+trap cleanup SIGINT SIGTERM
+
+echo "🌍 Setting up port forwarding..."
+echo "Access the application at http://localhost:8080"
+kubectl port-forward -n ingress-nginx service/ingress-nginx-controller 8080:80 &
+
+# Keep the script running to maintain port forwarding
 echo "🔄 Services are running. Press Ctrl+C to stop..."
+wait
