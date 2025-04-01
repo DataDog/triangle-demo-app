@@ -3,6 +3,5 @@ kind: ConfigMap
 metadata:
   name: datadog-config
 data:
-  DD_SITE: "us5.datadoghq.com"
-  DD_API_KEY: "${DD_API_KEY}"  # This will be replaced with the actual API key from a secret
+  DD_SITE: "us5"
   DD_HOSTNAME: "${HOSTNAME}"    # This will be replaced with the pod's hostname

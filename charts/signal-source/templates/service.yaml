@@ -3,11 +3,11 @@ kind: Service
 metadata:
   name: {{ include "signal-source.fullname" . }}
   labels:
-    app: {{ include "signal-source.name" . }}
+    {{- include "signal-source.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   ports:
     - port: {{ .Values.service.port }}
       targetPort: 8000
   selector:
-    app: {{ include "signal-source.name" . }}
+    {{- include "signal-source.selectorLabels" . | nindent 4 }}

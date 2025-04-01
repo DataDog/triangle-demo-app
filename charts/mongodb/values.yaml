@@ -1,3 +1,27 @@
 username: ""
 password: ""
 database: ""
+
+replicaCount: 1
+
+image:
+  repository: mongo
+  tag: "6.0"
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+mongodb:
+  auth:
+    username: ""
+    password: ""
+    database: ""
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: 500m
+    memory: 1Gi

@@ -3,11 +3,11 @@ kind: Service
 metadata:
   name: {{ include "locator.fullname" . }}
   labels:
-    app: {{ include "locator.name" . }}
+    {{- include "locator.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   ports:
     - port: {{ .Values.service.port }}
       targetPort: 8000
   selector:
-    app: {{ include "locator.name" . }}
+    {{- include "locator.selectorLabels" . | nindent 4 }}

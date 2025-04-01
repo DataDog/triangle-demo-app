@@ -3,10 +3,11 @@ kind: Ingress
 metadata:
   name: triangle-ingress
 spec:
+  ingressClassName: nginx
   rules:
     - http:
         paths:
-          - path: /api/simulation/towers
+          - path: /api/simulation
             pathType: Prefix
             backend:
               service:
@@ -14,7 +15,7 @@ spec:
                 port:
                   number: 8000
 
-          - path: /api/signals/signals
+          - path: /api/signals
             pathType: Prefix
             backend:
               service:
@@ -22,7 +23,7 @@ spec:
                 port:
                   number: 8000
 
-          - path: /api/locator/detections
+          - path: /api/locator
             pathType: Prefix
             backend:
               service:

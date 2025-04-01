@@ -3,4 +3,4 @@ kind: ConfigMap
 metadata:
   name: mongodb-config
 data:
-  MONGO_DB: {{ .Values.database | required "Missing MONGO_DB" }}
+  MONGO_DB: {{ .Values.mongodb.auth.database | required "Missing MONGO_DB" }}

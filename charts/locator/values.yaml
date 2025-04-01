@@ -5,7 +5,7 @@ fullnameOverride: locator
 image:
   repository: locator
   tag: local
-  pullPolicy: IfNotPresent
+  pullPolicy: Never
 
 service:
   type: ClusterIP

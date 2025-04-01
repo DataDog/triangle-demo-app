@@ -3,16 +3,16 @@ kind: Deployment
 metadata:
   name: {{ include "frontend.fullname" . }}
   labels:
-    app: {{ include "frontend.name" . }}
+    {{- include "frontend.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ include "frontend.name" . }}
+      {{- include "frontend.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app: {{ include "frontend.name" . }}
+        {{- include "frontend.selectorLabels" . | nindent 8 }}
     spec:
       containers:
         - name: frontend

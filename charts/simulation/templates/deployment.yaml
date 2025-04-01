@@ -3,46 +3,85 @@ kind: Deployment
 metadata:
   name: {{ include "simulation.fullname" . }}
   labels:
-    app: {{ include "simulation.name" . }}
+    {{- include "simulation.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ include "simulation.name" . }}
+      {{- include "simulation.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app: {{ include "simulation.name" . }}
+        {{- include "simulation.selectorLabels" . | nindent 8 }}
     spec:
       containers:
-        - name: simulation
+        - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - containerPort: 8000
+            - name: http
+              containerPort: 8000
+              protocol: TCP
           env:
-            - name: MONGO_URI
-              value: {{ .Values.env.MONGO_URI | quote }}
-            - name: MONGO_DB
-              value: {{ .Values.env.MONGO_DB | quote }}
+            {{- if .Values.opentelemetry.enabled }}
             - name: OTEL_SERVICE_NAME
-              value: "simulation-service"
-            - name: OTEL_TRACES_EXPORTER
-              value: "otlp"
-            - name: OTEL_METRICS_EXPORTER
-              value: "otlp"
+              value: {{ .Values.opentelemetry.serviceName | quote }}
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: {{ range $key, $value := .Values.opentelemetry.resourceAttributes }}{{ $key }}={{ $value }},{{ end }}
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: {{ .Values.env.OTEL_EXPORTER_OTLP_ENDPOINT | quote }}
-            - name: OTEL_PROPAGATORS
-              value: "tracecontext,baggage"
-            - name: LOCATOR_URL
-              value: {{ .Values.env.LOCATOR_URL | quote }}
+              value: {{ .Values.opentelemetry.exporter.endpoint | quote }}
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: {{ .Values.opentelemetry.exporter.protocol | quote }}
+            - name: OTEL_TRACES_EXPORTER
+              value: {{ .Values.opentelemetry.traces.exporter | quote }}
+            - name: OTEL_METRICS_EXPORTER
+              value: {{ .Values.opentelemetry.metrics.exporter | quote }}
+            - name: OTEL_LOGS_EXPORTER
+              value: {{ .Values.opentelemetry.logs.exporter | quote }}
+            - name: OTEL_TRACES_SAMPLER
+              value: {{ .Values.opentelemetry.traces.sampler | quote }}
+            {{- end }}
+            {{- range $key, $value := .Values.env }}
+            {{- if and (eq $key "MONGO_USERNAME") (empty $value) }}
+            - name: {{ $key }}
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-auth
+                  key: MONGO_USERNAME
+            {{- else if and (eq $key "MONGO_PASSWORD") (empty $value) }}
+            - name: {{ $key }}
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-auth
+                  key: MONGO_PASSWORD
+            {{- else }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            failureThreshold: 30
+            periodSeconds: 5
+            initialDelaySeconds: 10
+            timeoutSeconds: 3
           readinessProbe:
             httpGet:
               path: /healthz
-              port: 8000
-            initialDelaySeconds: 5
+              port: http
+            initialDelaySeconds: 10
             periodSeconds: 5
-            timeoutSeconds: 2
             failureThreshold: 3
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
 

@@ -3,23 +3,46 @@ replicaCount: 1
 image:
   repository: simulation
   tag: local
-  pullPolicy: IfNotPresent
+  pullPolicy: Never
+
+nameOverride: ""
+fullnameOverride: ""
 
 service:
   type: ClusterIP
   port: 8000
-fullnameOverride: simulation
 
+resources:
+  requests:
+    cpu: 250m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# OpenTelemetry Configuration
+opentelemetry:
+  enabled: true
+  serviceName: simulation
+  exporter:
+    endpoint: otel-collector:4317
+    protocol: grpc
+  traces:
+    exporter: "otlp"
+    sampler: "parentbased_always_on"
+  metrics:
+    exporter: "otlp"
+  logs:
+    exporter: "otlp"
+  resourceAttributes:
+    service.name: "simulation"
+
+# Application Environment Variables
 env:
-  MONGO_URI: "mongodb://mongouser:mongopass@mongodb:27017/triangle?authSource=admin"
-  MONGO_DB: "triangle"
-  OTEL_SERVICE_NAME: "simulation-service"
-  OTEL_TRACES_EXPORTER: "otlp"
-  OTEL_METRICS_EXPORTER: "otlp"
-  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
-  OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "http://otel-collector:4318"
-  OTEL_EXPORTER_OTLP_PROTOCOL: "http"
-  OTEL_PROPAGATORS: "tracecontext,baggage"
-  OTEL_SDK_DISABLED: "false"
-  OTEL_TRACES_SAMPLER: "parentbased_always_on"
   LOCATOR_URL: "http://locator:8000/bundle"
+  MONGO_AUTH_SOURCE: "admin"
+  MONGO_DB: "triangle"
+  MONGO_HOST: "mongodb"
+  MONGO_PORT: "27017"
+  MONGO_USERNAME: "" # Will be set from secret
+  MONGO_PASSWORD: "" # Will be set from secret

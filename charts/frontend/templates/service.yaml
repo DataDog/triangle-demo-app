@@ -3,11 +3,15 @@ kind: Service
 metadata:
   name: {{ include "frontend.fullname" . }}
   labels:
-    app: {{ include "frontend.name" . }}
+    {{- include "frontend.labels" . | nindent 4 }}
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   type: {{ .Values.service.type }}
   ports:
     - port: {{ .Values.service.port }}
       targetPort: 80
+      protocol: TCP
+      name: http
   selector:
-    app: {{ include "frontend.name" . }}
+    {{- include "frontend.selectorLabels" . | nindent 4 }}

@@ -1,31 +1,26 @@
 import random
 import math
+import asyncio
 from app.models import Tower
 
 WORLD_SIZE = 1000
-PADDING = 200  # Increased padding from edges for better coverage
-RADIUS = 300   # Distance from center to tower (controls triangle size)
+PADDING = 200
+RADIUS = 300  # Distance from center to tower (triangle size)
+JITTER = 30   # Small position noise for realism
 
 def generate_towers():
-    # Calculate center point
     center_x = WORLD_SIZE // 2
     center_y = WORLD_SIZE // 2
 
-    # Generate three points in an equilateral triangle
-    # Using angles: 90° (top), 210° (bottom left), 330° (bottom right)
+    # Equilateral triangle: angles 90°, 210°, 330°
     base_positions = [
-        # Top center
-        (center_x, center_y - RADIUS),
-        # Bottom left
+        (center_x, center_y - RADIUS),  # Top
         (center_x - int(RADIUS * math.cos(math.radians(30))),
-         center_y + int(RADIUS * math.sin(math.radians(30)))),
-        # Bottom right
+         center_y + int(RADIUS * math.sin(math.radians(30)))),  # Bottom left
         (center_x + int(RADIUS * math.cos(math.radians(30))),
-         center_y + int(RADIUS * math.sin(math.radians(30))))
+         center_y + int(RADIUS * math.sin(math.radians(30))))   # Bottom right
     ]
 
-    # Add small random jitter (much smaller than before)
-    JITTER = 30  # Reduced jitter for more stable positioning
     towers = []
     for i, (base_x, base_y) in enumerate(base_positions):
         x = max(PADDING, min(WORLD_SIZE - PADDING,
@@ -36,21 +31,28 @@ def generate_towers():
 
     return towers
 
-import asyncio
-
 async def initialize_towers(db):
     collection = db["towers"]
     try:
-        print("🔌 Connecting to MongoDB...")
-        await asyncio.wait_for(collection.count_documents({}), timeout=5)
-    except Exception as e:
-        print(f"❌ MongoDB not reachable: {e}")
-        raise
+        print("🔌 Checking MongoDB connection...")
+        # First try a simple ping
+        await db.command("ping")
+        print("✅ MongoDB connection verified")
 
-    existing = await collection.count_documents({})
-    if existing == 0:
-        towers = generate_towers()
-        await collection.insert_many([tower.dict() for tower in towers])
-        print("✅ Inserted towers into MongoDB")
-    else:
-        print("📡 Towers already exist in MongoDB")
+        # Then check if we can access the collection
+        print("📊 Checking towers collection...")
+        existing = await collection.count_documents({})
+        print(f"📡 Found {existing} existing towers")
+
+        if existing == 0:
+            print("🎯 Generating new towers...")
+            towers = generate_towers()
+            print(f"📦 Inserting {len(towers)} towers...")
+            await collection.insert_many([tower.dict() for tower in towers])
+            print("✅ Successfully inserted towers")
+        else:
+            print(f"📡 {existing} towers already exist in MongoDB")
+
+    except Exception as e:
+        print(f"❌ Error initializing towers: {str(e)}")
+        raise RuntimeError(f"Failed to initialize towers: {str(e)}") from e

@@ -1,0 +1,52 @@
+# Global values (populated by run.sh)
+global:
+  mongodb:
+    username: ""
+    password: ""
+    database: ""
+  datadog:
+    site: ""
+    apiKey: ""
+
+# MongoDB Configuration
+mongodb:
+  host: mongodb
+  port: 27017
+  authSource: admin
+
+# OpenTelemetry Configuration
+opentelemetry:
+  enabled: true
+  endpoint: otel-collector:4317
+  protocol: grpc
+
+# Service Configuration
+service:
+  frontend:
+    type: ClusterIP
+    port: 80
+  simulation:
+    type: ClusterIP
+    port: 8000
+  signalSource:
+    type: ClusterIP
+    port: 8000
+  locator:
+    type: ClusterIP
+    port: 8000
+
+# Service URLs (for internal communication)
+services:
+  simulation:
+    url: http://simulation:8000/towers
+  signalSource:
+    url: http://signal-source:8000/signals
+  locator:
+    url: http://locator:8000/detections
+
+# Frontend Configuration
+frontend:
+  env:
+    VITE_SIMULATION_BASE: /api/simulation/towers
+    VITE_SIGNAL_SOURCE_BASE: /api/signals/signals
+    VITE_LOCATOR_BASE: /api/locator/detections

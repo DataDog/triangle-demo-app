@@ -3,12 +3,17 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  preview: {
+    port: 80,
+    host: true,
+    strictPort: true
+  },
   server: {
     port: 3000,
-    proxy: {
-      '/towers': 'http://localhost:8000',
-      '/signals': 'http://localhost:8000',
-      '/detections': 'http://localhost:8000'
-    }
+    host: true
+  },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets'
   }
 });

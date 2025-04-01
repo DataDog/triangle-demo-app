@@ -3,11 +3,11 @@ kind: Service
 metadata:
   name: {{ include "simulation.fullname" . }}
   labels:
-    app: {{ include "simulation.name" . }}
+    {{- include "simulation.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   ports:
     - port: {{ .Values.service.port }}
       targetPort: 8000
   selector:
-    app: {{ include "simulation.name" . }}
+    {{- include "simulation.selectorLabels" . | nindent 4 }}

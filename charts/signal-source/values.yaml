@@ -3,25 +3,49 @@ replicaCount: 1
 image:
   repository: signal-source
   tag: local
-  pullPolicy: IfNotPresent
+  pullPolicy: Never
 
 service:
   type: ClusterIP
   port: 8000
+
+nameOverride: ""
+fullnameOverride: ""
+
+opentelemetry:
+  enabled: true
+  serviceName: signal-source
+  exporter:
+    endpoint: otel-collector:4317
+    protocol: grpc
+    timeout: 10s
+  traces:
+    exporter: "otlp"
+    sampler: "parentbased_always_on"
+  metrics:
+    exporter: "otlp"
+  logs:
+    exporter: "otlp"
+  instrumentation:
+    enabled: true
+    serviceName: signal-source
+    exporter:
+      endpoint: otel-collector:4317
+      protocol: grpc
+      timeout: 10s
+  resourceAttributes:
+    service.name: "signal-source"
 
 env:
   MONGO_USERNAME: mongouser
   MONGO_PASSWORD: mongopass
   MONGO_DB: triangle
   SIMULATION_URL: http://simulation:8000/signal
-  OTEL_SERVICE_NAME: "signal-source-service"
-  OTEL_TRACES_EXPORTER: "otlp"
-  OTEL_METRICS_EXPORTER: "otlp"
-  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
-  OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "http://otel-collector:4318"
-  OTEL_EXPORTER_OTLP_PROTOCOL: "http"
-  OTEL_PROPAGATORS: "tracecontext,baggage"
-  OTEL_SDK_DISABLED: "false"
-  OTEL_TRACES_SAMPLER: "parentbased_always_on"
 
-resources: {}
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi

@@ -2,73 +2,77 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "signal-source.fullname" . }}
+  labels:
+    {{- include "signal-source.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.replicaCount | default 1 }}
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ include "signal-source.name" . }}
+      {{- include "signal-source.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app: {{ include "signal-source.name" . }}
+        {{- include "signal-source.selectorLabels" . | nindent 8 }}
     spec:
       containers:
-        - name: signal-source
+        - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
-          envFrom:
-            - secretRef:
-                name: mongodb-secret
-            - configMapRef:
-                name: mongodb-config
-
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
           env:
-            - name: MONGO_USERNAME
-              value: {{ .Values.env.MONGO_USERNAME | quote }}
-            - name: MONGO_PASSWORD
-              value: {{ .Values.env.MONGO_PASSWORD | quote }}
-            - name: MONGO_DB
-              value: {{ .Values.env.MONGO_DB | quote }}
-            - name: SIMULATION_URL
-              value: {{ .Values.env.SIMULATION_URL | quote }}
+            {{- if .Values.opentelemetry.enabled }}
             - name: OTEL_SERVICE_NAME
-              value: {{ .Values.env.OTEL_SERVICE_NAME | quote }}
-            - name: OTEL_TRACES_EXPORTER
-              value: {{ .Values.env.OTEL_TRACES_EXPORTER | quote }}
-            - name: OTEL_METRICS_EXPORTER
-              value: {{ .Values.env.OTEL_METRICS_EXPORTER | quote }}
+              value: {{ .Values.opentelemetry.serviceName | quote }}
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: {{ range $key, $value := .Values.opentelemetry.resourceAttributes }}{{ $key }}={{ $value }},{{ end }}
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: {{ .Values.env.OTEL_EXPORTER_OTLP_ENDPOINT | quote }}
+              value: {{ .Values.opentelemetry.exporter.endpoint | quote }}
             - name: OTEL_EXPORTER_OTLP_PROTOCOL
-              value: {{ .Values.env.OTEL_EXPORTER_OTLP_PROTOCOL | quote }}
-            - name: OTEL_PROPAGATORS
-              value: {{ .Values.env.OTEL_PROPAGATORS | quote }}
-            - name: OTEL_SDK_DISABLED
-              value: {{ .Values.env.OTEL_SDK_DISABLED | quote }}
+              value: {{ .Values.opentelemetry.exporter.protocol | quote }}
+            - name: OTEL_TRACES_EXPORTER
+              value: {{ .Values.opentelemetry.traces.exporter | quote }}
+            - name: OTEL_METRICS_EXPORTER
+              value: {{ .Values.opentelemetry.metrics.exporter | quote }}
+            - name: OTEL_LOGS_EXPORTER
+              value: {{ .Values.opentelemetry.logs.exporter | quote }}
             - name: OTEL_TRACES_SAMPLER
-              value: {{ .Values.env.OTEL_TRACES_SAMPLER | quote }}
-            - name: RUST_LOG
-              value: "debug"
-            - name: RUST_BACKTRACE
-              value: "1"
-
+              value: {{ .Values.opentelemetry.traces.sampler | quote }}
+            - name: OTEL_PYTHON_INSTRUMENTATION_ENABLED
+              value: {{ .Values.opentelemetry.instrumentation.enabled | quote }}
+            - name: OTEL_PYTHON_FASTAPI_INSTRUMENTATION_ENABLED
+              value: {{ .Values.opentelemetry.instrumentation.fastapi | quote }}
+            - name: OTEL_PYTHON_HTTPX_INSTRUMENTATION_ENABLED
+              value: {{ .Values.opentelemetry.instrumentation.httpx | quote }}
+            - name: OTEL_PYTHON_PYMONGO_INSTRUMENTATION_ENABLED
+              value: {{ .Values.opentelemetry.instrumentation.pymongo | quote }}
+            {{- end }}
+            {{- range $key, $value := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            failureThreshold: 60
+            periodSeconds: 10
+            initialDelaySeconds: 30
           readinessProbe:
             httpGet:
               path: /healthz
-              port: 8000
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            timeoutSeconds: 2
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
             failureThreshold: 3
-
+            timeoutSeconds: 5
           livenessProbe:
             httpGet:
               path: /healthz
-              port: 8000
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            timeoutSeconds: 2
-            failureThreshold: 3
-
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20

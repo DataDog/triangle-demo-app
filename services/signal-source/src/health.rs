@@ -11,7 +11,7 @@ pub async fn healthz(
     signal_loop_running: web::Data<Arc<AtomicBool>>,
 ) -> impl Responder {
     // Check Mongo
-    let db = mongo_client.database("admin");
+    let db = mongo_client.database("triangle");
     match db.run_command(doc! {"ping": 1}).await {
         Ok(_) => println!("✅ MongoDB health check passed"),
         Err(e) => {
@@ -20,22 +20,26 @@ pub async fn healthz(
         }
     }
 
-    // Check Simulation
-    let client = HttpClient::new();
-    let sim_url = format!("{}/healthz", simulation_url.get_ref().trim_end_matches("/signal"));
-    match client.get(&sim_url).send().await {
-        Ok(response) => {
-            if response.status().is_success() {
-                println!("✅ Simulation service health check passed");
-            } else {
-                eprintln!("❌ Simulation service returned non-200 status: {}", response.status());
-                return HttpResponse::ServiceUnavailable().body("simulation service unhealthy");
+    // Check Simulation - only if signal loop is running
+    if signal_loop_running.load(std::sync::atomic::Ordering::SeqCst) {
+        let client = HttpClient::new();
+        let sim_url = format!("{}/healthz", simulation_url.get_ref().trim_end_matches("/signal"));
+        match client.get(&sim_url).send().await {
+            Ok(response) => {
+                if response.status().is_success() {
+                    println!("✅ Simulation service health check passed");
+                } else {
+                    eprintln!("❌ Simulation service returned non-200 status: {}", response.status());
+                    return HttpResponse::ServiceUnavailable().body("simulation service unhealthy");
+                }
+            }
+            Err(e) => {
+                eprintln!("❌ Simulation service health check failed: {}", e);
+                return HttpResponse::ServiceUnavailable().body("simulation unreachable");
             }
         }
-        Err(e) => {
-            eprintln!("❌ Simulation service health check failed: {}", e);
-            return HttpResponse::ServiceUnavailable().body("simulation unreachable");
-        }
+    } else {
+        println!("⚠️ Signal loop not running yet, skipping simulation health check");
     }
 
     // Check signal loop

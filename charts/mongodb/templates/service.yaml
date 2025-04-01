@@ -4,7 +4,8 @@ metadata:
   name: mongodb
 spec:
   selector:
-    app: mongodb
+    app.kubernetes.io/instance: mongodb
+    app.kubernetes.io/name: mongodb
   ports:
     - port: 27017
       targetPort: 27017

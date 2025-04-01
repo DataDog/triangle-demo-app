@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 
-const SIMULATION_BASE = import.meta.env.VITE_SIMULATION_BASE;
-const SIGNAL_SOURCE_BASE = import.meta.env.VITE_SIGNAL_SOURCE_BASE;
-const LOCATOR_BASE = import.meta.env.VITE_LOCATOR_BASE;
+// Use relative paths for API endpoints
+const SIMULATION_BASE = '/api/simulation/towers';
+const SIGNAL_SOURCE_BASE = '/api/signals/signals';
+const LOCATOR_BASE = '/api/locator/detections';
 
 // Log environment variables (excluding sensitive data)
 console.log('API Endpoints:', {
@@ -40,10 +41,11 @@ export const useData = () => {
   useEffect(() => {
     let intervalId: number;
     let isVisible = true;
+    let isMounted = true;
 
     const handleVisibilityChange = () => {
       isVisible = document.visibilityState === 'visible';
-      if (isVisible) {
+      if (isVisible && isMounted) {
         // Clear data when returning to the tab
         setSignals([]);
         setDetections([]);
@@ -51,24 +53,26 @@ export const useData = () => {
     };
 
     const fetchData = async () => {
-      if (!isVisible) return;
+      if (!isVisible || !isMounted) return;
 
       try {
         // Fetch towers first as they're required for the visualization
-        const tRes = await axios.get<Tower[]>(`${SIMULATION_BASE}/towers`);
-        setTowers(tRes.data);
+        const tRes = await axios.get<Tower[]>(SIMULATION_BASE);
+        if (!isMounted) return;
+        setTowers(tRes.data || []);
 
         // Then fetch signals and detections
         const [sRes, dRes] = await Promise.all([
-          axios.get<Signal[]>(`${SIGNAL_SOURCE_BASE}/signals`),
-          axios.get<Detection[]>(`${LOCATOR_BASE}/detections`)
+          axios.get<Signal[]>(SIGNAL_SOURCE_BASE),
+          axios.get<Detection[]>(LOCATOR_BASE)
         ]);
 
-        if (sRes.data) setSignals(sRes.data);
-        if (dRes.data) setDetections(dRes.data);
-
+        if (!isMounted) return;
+        setSignals(sRes.data || []);
+        setDetections(dRes.data || []);
         setError(null);
       } catch (err) {
+        if (!isMounted) return;
         console.error('❌ Failed to fetch data:', err);
         if (axios.isAxiosError(err)) {
           setError(`Failed to fetch data: ${err.message}${err.response ? ` (${err.response.status})` : ''}`);
@@ -87,7 +91,9 @@ export const useData = () => {
           setError('An unexpected error occurred');
         }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -96,10 +102,17 @@ export const useData = () => {
     intervalId = window.setInterval(fetchData, 5000);
 
     return () => {
+      isMounted = false;
       window.clearInterval(intervalId);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
-  return { towers, signals, detections, loading, error };
+  return {
+    towers: towers || [],
+    signals: signals || [],
+    detections: detections || [],
+    loading,
+    error
+  };
 };
