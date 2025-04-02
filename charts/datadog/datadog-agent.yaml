@@ -1,0 +1,49 @@
+apiVersion: datadoghq.com/v2alpha1
+kind: DatadogAgent
+metadata:
+  name: datadog
+  namespace: $KUBERNETES_NAMESPACE
+spec:
+  global:
+    credentials:
+      apiSecret:
+        secretName: datadog-secret
+        keyName: api-key
+      appSecret:
+        secretName: datadog-secret
+        keyName: app-key
+    site: $DD_SITE
+    clusterName: $DD_CLUSTER_NAME
+    kubelet:
+      tlsVerify: false
+  override:
+    # Node Agent configuration
+    nodeAgent:
+      image:
+        name: "gcr.io/datadoghq/agent:7.62.2-ot-beta"
+        pullPolicy: Always
+  features:
+    apm:
+      enabled: true
+    orchestratorExplorer:
+      enabled: true
+    processDiscovery:
+      enabled: true
+    liveProcessCollection:
+      enabled: true
+    usm:
+      enabled: true
+    clusterChecks:
+      enabled: true
+    otelCollector:
+      enabled: true
+      ports:
+        - containerPort: 4317
+          hostPort: 4317
+          name: otel-grpc
+        - containerPort: 4318
+          hostPort: 4318
+          name: otel-http
+      conf:
+        configMap:
+          name: otel-agent-config-map

@@ -1,40 +1,34 @@
 #!/bin/bash
 set -e
 
-echo "🧹 Cleaning up Kubernetes resources..."
+echo "📄 Loading environment variables from .env"
+set -o allexport
+source .env
+set +o allexport
 
-# Kill any port forwarding processes
-echo "🛑 Stopping port forwarding..."
-pkill -f "kubectl port-forward" || true
+echo "🧹 Starting cleanup..."
 
-# Delete cluster-scoped resources first
-echo "🗑️  Removing cluster-scoped resources..."
-kubectl delete clusterrole otel-collector --ignore-not-found
-kubectl delete clusterrolebinding otel-collector --ignore-not-found
+# Delete Datadog resources first
+echo "🗑️  Deleting Datadog resources..."
+kubectl delete datadogagent --all -n $KUBERNETES_NAMESPACE --ignore-not-found
+kubectl delete crd datadogagents.datadoghq.com --ignore-not-found
+kubectl delete clusterrolebinding datadog-agent-clusterrolebinding --ignore-not-found
+kubectl delete clusterrole datadog-agent-clusterrole --ignore-not-found
 
-# Delete Helm releases
-echo "🗑️  Removing Helm releases..."
-helm uninstall frontend -n ${KUBERNETES_NAMESPACE:-default} || true
-helm uninstall simulation -n ${KUBERNETES_NAMESPACE:-default} || true
-helm uninstall signal-source -n ${KUBERNETES_NAMESPACE:-default} || true
-helm uninstall locator -n ${KUBERNETES_NAMESPACE:-default} || true
-helm uninstall mongodb -n ${KUBERNETES_NAMESPACE:-default} || true
-helm uninstall otel -n ${KUBERNETES_NAMESPACE:-default} || true
+# Delete all Helm releases in the namespace
+echo "🗑️  Deleting Helm releases..."
+helm list -n $KUBERNETES_NAMESPACE --short | xargs -r helm uninstall -n $KUBERNETES_NAMESPACE || true
 
-# Delete deployments, services, and ingress
-echo "🗑️  Removing deployments, services, and ingress..."
-kubectl delete deployment --all -n ${KUBERNETES_NAMESPACE:-default} --ignore-not-found
-kubectl delete svc --all -n ${KUBERNETES_NAMESPACE:-default} --ignore-not-found
-kubectl delete ingress --all -n ${KUBERNETES_NAMESPACE:-default} --ignore-not-found
-kubectl delete secret --all -n ${KUBERNETES_NAMESPACE:-default} --ignore-not-found
+# Delete all resources in the namespace
+echo "🗑️  Deleting namespace resources..."
+kubectl delete all,ingress,secret,configmap --all -n $KUBERNETES_NAMESPACE --ignore-not-found
 
-echo "▶️  Using Minikube Docker env"
-eval $(minikube docker-env)
+# Force delete any remaining pods
+echo "🗑️  Force deleting any remaining pods..."
+kubectl delete pods --all -n $KUBERNETES_NAMESPACE --force --grace-period=0 --ignore-not-found
 
-# Remove Docker images
-for img in signal-source simulation locator frontend; do
-  echo "🧹 Removing Docker image: $img:local"
-  docker rmi "$img:local" || true
-done
+# Clean up Docker resources
+echo "🗑️  Cleaning up Docker resources..."
+docker system prune -f
 
 echo "✅ Cleanup complete."

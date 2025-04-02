@@ -1,0 +1,6 @@
+apiVersion: v2
+name: datadog
+description: Datadog Agent configuration for the Triangle application
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

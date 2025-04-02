@@ -1,21 +1,35 @@
 #!/bin/bash
 set -e
 
-echo "🧹 Cleaning up previous deployments..."
-kubectl delete deployment --all -n ${KUBERNETES_NAMESPACE:-default}
-kubectl delete svc --all -n ${KUBERNETES_NAMESPACE:-default}
-kubectl delete ingress --all -n ${KUBERNETES_NAMESPACE:-default}
-
-echo "▶️  Using Minikube Docker env"
-eval $(minikube docker-env)
-
 echo "📄 Loading environment variables from .env"
 set -o allexport
 source .env
 set +o allexport
 
+echo "🧹 Cleaning up previous deployments..."
+kubectl delete deployment,svc --all -n $KUBERNETES_NAMESPACE --ignore-not-found
+kubectl delete service kubernetes -n $KUBERNETES_NAMESPACE --ignore-not-found
+kubectl delete ingress --all -n $KUBERNETES_NAMESPACE --ignore-not-found
+
+echo "▶️  Using Minikube Docker env"
+eval $(minikube docker-env)
+
+
 # Check required environment variables
-required_vars=("MONGO_USERNAME" "MONGO_PASSWORD" "MONGO_DB" "DD_API_KEY" "DD_SITE")
+required_vars=(
+  "MONGO_USERNAME"
+  "MONGO_PASSWORD"
+  "MONGO_DB"
+  "DD_API_KEY"
+  "DD_SITE"
+  "DD_APP_KEY"
+  "DD_CLUSTER_NAME"
+  "SIMULATION_URL"
+  "VITE_SIMULATION_BASE"
+  "VITE_SIGNAL_SOURCE_BASE"
+  "VITE_LOCATOR_BASE"
+)
+
 for var in "${required_vars[@]}"; do
     if [ -z "${!var}" ]; then
         echo "❌ Error: Required environment variable $var is not set"
@@ -23,111 +37,90 @@ for var in "${required_vars[@]}"; do
     fi
 done
 
-# Enable ingress-nginx
 echo "🔄 Enabling ingress-nginx..."
 minikube addons enable ingress
 
-echo "🐳 Building Docker images..."
-docker build -t simulation:local ./services/simulation
-docker build -t signal-source:local ./services/signal-source
-docker build -t locator:local ./services/locator
-docker build -t frontend:local ./services/frontend
+echo "🐕 Setting up Datadog with OpenTelemetry Collector..."
+helm repo add datadog https://helm.datadoghq.com
+helm repo update
 
-echo "📦 Deploying Helm charts..."
-
-# Common Helm values for all charts
-HELM_GLOBAL_VALUES="--set global.namespace=${KUBERNETES_NAMESPACE:-default} \
-  --set mongodb.auth.username=$MONGO_USERNAME \
-  --set mongodb.auth.password=$MONGO_PASSWORD \
-  --set mongodb.auth.database=$MONGO_DB \
-  --set global.datadog.apiKey=$DD_API_KEY \
-  --set global.datadog.site=$DD_SITE"
-
-# Deploy MongoDB
-echo "🚀 Deploying MongoDB..."
-helm upgrade --install mongodb ./charts/mongodb \
-  --namespace ${KUBERNETES_NAMESPACE:-default} \
-  --set-string mongodb.auth.username=$MONGO_USERNAME \
-  --set-string mongodb.auth.password=$MONGO_PASSWORD \
-  --set-string mongodb.auth.database=$MONGO_DB
+# Install Datadog Operator
+echo "🐕 Installing Datadog Operator..."
+helm upgrade --install datadog-operator datadog/datadog-operator \
+  --namespace $KUBERNETES_NAMESPACE \
+  --create-namespace
 
 # Create Datadog secret
 echo "🔑 Creating Datadog secret..."
 kubectl create secret generic datadog-secret \
-  --namespace ${KUBERNETES_NAMESPACE:-default} \
-  --from-literal=DD_API_KEY=$DD_API_KEY \
-  --dry-run=client -o yaml | kubectl apply -f -
+  --from-literal=api-key="${DD_API_KEY}" \
+  --from-literal=app-key="${DD_APP_KEY}" \
+  -n $KUBERNETES_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
 
-# Deploy OpenTelemetry Collector
-echo "🚀 Deploying OpenTelemetry Collector..."
-# First, delete any existing cluster-scoped resources
-kubectl delete clusterrole otel-collector --ignore-not-found
-kubectl delete clusterrolebinding otel-collector --ignore-not-found
+# Create OpenTelemetry ConfigMap
+echo "📝 Creating OpenTelemetry ConfigMap..."
+# Process the YAML file with envsubst
+envsubst < charts/datadog/otel-config.yaml > /tmp/otel-config-processed.yaml
+# Create the ConfigMap from the processed file
+kubectl create configmap otel-agent-config-map \
+  --from-file=otel-config.yaml=/tmp/otel-config-processed.yaml \
+  -n $KUBERNETES_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+# Clean up the temporary file
+rm /tmp/otel-config-processed.yaml
 
-# Then deploy the collector
-helm upgrade --install otel ./charts/otel \
-    --namespace ${KUBERNETES_NAMESPACE:-default} \
-    -f ./charts/shared/values.yaml \
-    $HELM_GLOBAL_VALUES
+# Process and apply Datadog Agent configuration
+echo "🐕 Deploying Datadog Agent with OpenTelemetry Collector..."
+envsubst < charts/datadog/datadog-agent.yaml | kubectl apply -f -
 
-# Deploy services
+echo "🐳 Building Docker images..."
+for img in signal-source simulation locator; do
+  echo "🔨 Building $img:local"
+  docker build -t "$img:local" "services/$img"
+done
+
+# Build frontend with build args
+echo "🔨 Building frontend:local"
+docker build -t frontend:local ./services/frontend \
+  --build-arg VITE_SIMULATION_BASE=${VITE_SIMULATION_BASE} \
+  --build-arg VITE_SIGNAL_SOURCE_BASE=${VITE_SIGNAL_SOURCE_BASE} \
+  --build-arg VITE_LOCATOR_BASE=${VITE_LOCATOR_BASE}
+
 echo "🚀 Deploying services..."
-helm upgrade --install simulation ./charts/simulation \
-    --namespace ${KUBERNETES_NAMESPACE:-default} \
-    -f ./charts/shared/values.yaml \
-    $HELM_GLOBAL_VALUES
+helm upgrade --install mongodb ./charts/mongodb \
+  --namespace $KUBERNETES_NAMESPACE \
+  --set-string "mongodb.auth.username=${MONGO_USERNAME}" \
+  --set-string "mongodb.auth.password=${MONGO_PASSWORD}" \
+  --set-string "mongodb.auth.database=${MONGO_DB}"
 
-helm upgrade --install signal-source ./charts/signal-source \
-    --namespace ${KUBERNETES_NAMESPACE:-default} \
-    -f ./charts/shared/values.yaml \
-    $HELM_GLOBAL_VALUES
-
+# Deploy Locator first since other services depend on it
 helm upgrade --install locator ./charts/locator \
-    --namespace ${KUBERNETES_NAMESPACE:-default} \
-    -f ./charts/shared/values.yaml \
-    $HELM_GLOBAL_VALUES
+  --namespace $KUBERNETES_NAMESPACE \
+  --set-string "env.MONGO_URI=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin"
 
+# Deploy Simulation which depends on Locator
+helm upgrade --install simulation ./charts/simulation \
+  --namespace $KUBERNETES_NAMESPACE \
+  --set-string "env.MONGO_USERNAME=${MONGO_USERNAME}" \
+  --set-string "env.MONGO_PASSWORD=${MONGO_PASSWORD}" \
+  --set-string "env.MONGO_DB=${MONGO_DB}" \
+  --set-string "env.LOCATOR_URL=http://locator:8000/bundle"
+
+# Deploy Signal Source which depends on Simulation
+helm upgrade --install signal-source ./charts/signal-source \
+  --namespace $KUBERNETES_NAMESPACE \
+  --set-string "env.MONGO_USERNAME=${MONGO_USERNAME}" \
+  --set-string "env.MONGO_PASSWORD=${MONGO_PASSWORD}" \
+  --set-string "env.MONGO_DB=${MONGO_DB}" \
+  --set-string "env.SIMULATION_URL=${SIMULATION_URL}"
+
+# Deploy Frontend which depends on all services
 helm upgrade --install frontend ./charts/frontend \
-    --namespace ${KUBERNETES_NAMESPACE:-default} \
-    -f ./charts/shared/values.yaml \
-    $HELM_GLOBAL_VALUES
+  --namespace $KUBERNETES_NAMESPACE
 
-# Wait for deployments to be ready
-echo "⏳ Waiting for deployments to be ready..."
-kubectl wait --for=condition=available --timeout=300s deployment/frontend -n ${KUBERNETES_NAMESPACE:-default}
-kubectl wait --for=condition=available --timeout=300s deployment/simulation -n ${KUBERNETES_NAMESPACE:-default}
-kubectl wait --for=condition=available --timeout=300s deployment/signal-source -n ${KUBERNETES_NAMESPACE:-default}
-kubectl wait --for=condition=available --timeout=300s deployment/locator -n ${KUBERNETES_NAMESPACE:-default}
+helm upgrade --install ingress ./charts/ingress \
+  --namespace $KUBERNETES_NAMESPACE
 
-# Wait for pods to be ready
-echo "⏳ Waiting for pods to be ready..."
-kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=frontend -n ${KUBERNETES_NAMESPACE:-default} --timeout=300s
-kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=simulation -n ${KUBERNETES_NAMESPACE:-default} --timeout=300s
-kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=signal-source -n ${KUBERNETES_NAMESPACE:-default} --timeout=300s
-kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=locator -n ${KUBERNETES_NAMESPACE:-default} --timeout=300s
+echo "🌍 Use this to access the app:"
+minikube service ingress-nginx-controller -n ingress-nginx --url
 
-echo "🌐 Applying Ingress..."
-# Process the ingress template with helm and apply it
-helm template ingress ./charts/shared \
-  --namespace ${KUBERNETES_NAMESPACE:-default} \
-  -f ./charts/shared/values.yaml \
-  --set global.namespace=${KUBERNETES_NAMESPACE:-default} \
-  --show-only templates/ingress.yaml | kubectl apply -f -
-
-# Function to clean up port forwarding on script exit
-cleanup() {
-    echo "🧹 Cleaning up port forwarding..."
-    kill $(jobs -p) 2>/dev/null
-    exit 0
-}
-
-# Set up trap for cleanup on script termination
-trap cleanup SIGINT SIGTERM
-
-echo "🌍 Setting up port forwarding..."
-echo "Access the application at http://localhost:8080"
-kubectl port-forward -n ingress-nginx service/ingress-nginx-controller 8080:80 &
-
-# Keep the script running to maintain port forwarding
-echo "🔄 Services are running. Press Ctrl+C to stop..."
-wait
+echo "✅ Deployment complete."

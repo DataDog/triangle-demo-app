@@ -16,49 +16,69 @@ spec:
     spec:
       containers:
         - name: {{ .Chart.Name }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default "local" }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http
               containerPort: 8000
               protocol: TCP
           env:
-            {{- if .Values.opentelemetry.enabled }}
-            - name: OTEL_SERVICE_NAME
-              value: {{ .Values.opentelemetry.serviceName | quote }}
-            - name: OTEL_RESOURCE_ATTRIBUTES
-              value: {{ range $key, $value := .Values.opentelemetry.resourceAttributes }}{{ $key }}={{ $value }},{{ end }}
+            # OpenTelemetry Configuration
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: OTLP_GRPC_PORT
+              value: "4317"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: {{ .Values.opentelemetry.exporter.endpoint | quote }}
+              value: "http://$(HOST_IP):$(OTLP_GRPC_PORT)"
             - name: OTEL_EXPORTER_OTLP_PROTOCOL
-              value: {{ .Values.opentelemetry.exporter.protocol | quote }}
-            - name: OTEL_TRACES_EXPORTER
-              value: {{ .Values.opentelemetry.traces.exporter | quote }}
-            - name: OTEL_METRICS_EXPORTER
-              value: {{ .Values.opentelemetry.metrics.exporter | quote }}
-            - name: OTEL_LOGS_EXPORTER
-              value: {{ .Values.opentelemetry.logs.exporter | quote }}
+              value: "grpc"
+            - name: OTEL_SERVICE_NAME
+              value: {{ include "simulation.fullname" . }}
+            # Python-specific OpenTelemetry settings
+            - name: OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED
+              value: "true"
+            - name: OTEL_PYTHON_FASTAPI_EXCLUDED_URLS
+              value: "healthz"
             - name: OTEL_TRACES_SAMPLER
-              value: {{ .Values.opentelemetry.traces.sampler | quote }}
-            {{- end }}
-            {{- range $key, $value := .Values.env }}
-            {{- if and (eq $key "MONGO_USERNAME") (empty $value) }}
-            - name: {{ $key }}
+              value: "parentbased_always_on"
+            - name: OTEL_METRICS_EXPORTER
+              value: "otlp"
+            - name: OTEL_LOGS_EXPORTER
+              value: "otlp"
+            - name: OTEL_PYTHON_LOG_LEVEL
+              value: "debug"
+            - name: PYTHONPATH
+              value: "/app"
+            # Kubernetes metadata for correlation
+            - name: OTEL_K8S_NAMESPACE
               valueFrom:
-                secretKeyRef:
-                  name: mongodb-auth
-                  key: MONGO_USERNAME
-            {{- else if and (eq $key "MONGO_PASSWORD") (empty $value) }}
-            - name: {{ $key }}
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: OTEL_K8S_NODE_NAME
               valueFrom:
-                secretKeyRef:
-                  name: mongodb-auth
-                  key: MONGO_PASSWORD
-            {{- else }}
-            - name: {{ $key }}
-              value: {{ $value | quote }}
-            {{- end }}
-            {{- end }}
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: spec.nodeName
+            - name: OTEL_K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: >-
+                service.name=$(OTEL_SERVICE_NAME),
+                k8s.namespace.name=$(OTEL_K8S_NAMESPACE),
+                k8s.node.name=$(OTEL_K8S_NODE_NAME),
+                k8s.pod.name=$(OTEL_K8S_POD_NAME),
+                k8s.container.name={{ .Chart.Name }},
+                host.name=$(OTEL_K8S_NODE_NAME),
+                deployment.environment=$(OTEL_K8S_NAMESPACE)
+            # Application specific environment variables
+            - name: SIMULATION_URL
+              value: {{ .Values.env.SIMULATION_URL | quote }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           startupProbe:

@@ -1,7 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: datadog-config
-data:
-  DD_SITE: "us5"
-  DD_HOSTNAME: "${HOSTNAME}"    # This will be replaced with the pod's hostname
