@@ -70,7 +70,7 @@ rm /tmp/otel-config-processed.yaml
 
 # Process and apply Datadog Agent configuration
 echo "🐕 Deploying Datadog Agent with OpenTelemetry Collector..."
-envsubst < charts/datadog/datadog-agent.yaml | kubectl apply -f -
+envsubst < charts/datadog/templates/datadog-agent.yaml | kubectl apply -f -
 
 echo "🐳 Building Docker images..."
 for img in signal-source simulation locator; do
