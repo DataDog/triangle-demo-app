@@ -60,7 +60,7 @@ kubectl create secret generic datadog-secret \
 # Create OpenTelemetry ConfigMap
 echo "📝 Creating OpenTelemetry ConfigMap..."
 # Process the YAML file with envsubst
-envsubst < charts/datadog/otel-config.yaml > /tmp/otel-config-processed.yaml
+envsubst < charts/datadog/configmap.yaml > /tmp/otel-config-processed.yaml
 # Create the ConfigMap from the processed file
 kubectl create configmap otel-agent-config-map \
   --from-file=otel-config.yaml=/tmp/otel-config-processed.yaml \
