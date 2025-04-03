@@ -27,7 +27,7 @@ tracer = trace.get_tracer(__name__)
 metric_reader = PeriodicExportingMetricReader(
     OTLPMetricExporter()
 )
-metrcs.set_meter_provider(MeterProvider(metric_readers=[metric_reader]))
+metrics.set_meter_provider(MeterProvider(metric_readers=[metric_reader]))
 meter = metrics.get_meter(__name__)
 
 # Create metrics
