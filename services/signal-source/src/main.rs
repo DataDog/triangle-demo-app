@@ -5,55 +5,84 @@ mod health;
 
 use actix_web::{web, App, HttpServer};
 use mongo::init_mongo;
-use signal_loop::start_signal_loop;
+use signal_loop::run_signal_loop;
 use health::healthz;
-use signal::get_signals;
 use std::io::{self, Write};
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
+use std::sync::OnceLock;
+use opentelemetry::KeyValue;
+use opentelemetry::{
+    global,
+    propagation::Extractor,
+    trace::{Span, SpanKind, Tracer},
+};
+use opentelemetry_sdk::{propagation::TraceContextPropagator, trace::SdkTracerProvider};
+use opentelemetry_stdout::SpanExporter;
+
+fn init_tracer() -> SdkTracerProvider {
+    global::set_text_map_propagator(TraceContextPropagator::new());
+    // Install stdout exporter pipeline to be able to retrieve the collected spans.
+    let provider = SdkTracerProvider::builder()
+        .with_simple_exporter(SpanExporter::default())
+        .build();
+
+    global::set_tracer_provider(provider.clone());
+    provider
+}
 
 #[tokio::main]
-async fn main() -> std::io::Result<()> {
-    // Panic logger
+async fn main() -> io::Result<()> {
+    // Initialize tracing with OpenTelemetry integration
+    init_tracer();
+    let tracer = global::tracer("server");
+    let mut span = tracer
+    .span_builder("main")
+    .with_kind(SpanKind::Server)
+    .start(&tracer);
+
+
+    // Set a panic hook to capture and log panics with backtraces
     std::panic::set_hook(Box::new(|info| {
-        eprintln!("🔥 PANIC: {}", info);
+        let thread = std::thread::current();
+        let thread_name = thread.name().unwrap_or("<unnamed>");
+        eprintln!("🔥 PANIC in thread '{}': {}", thread_name, info);
         eprintln!("🔥 Backtrace: {:?}", std::backtrace::Backtrace::force_capture());
+        std::io::stderr().flush().unwrap();
     }));
 
-    println!("🚀 Signal source starting...");
-    io::stdout().flush().unwrap();
+    span.add_event("Server is starting", vec![]);
 
-    // Initialize MongoDB + read simulation URL
-    println!("🔌 Initializing MongoDB connection...");
-    let (mongo_client, signal_collection, simulation_url) = init_mongo().await;
-    println!("✅ MongoDB connection successful");
 
-    // Create a flag to track if the signal loop is running
-    let signal_loop_running = Arc::new(AtomicBool::new(false));
+    // Initialize MongoDB
+    let (mongo_client, collection, simulation_url) = init_mongo().await.map_err(|e| {
+        io::Error::new(
+            io::ErrorKind::Other,
+            format!("Failed to initialize MongoDB: {}", e),
+        )
+    })?;
+    span.add_event("MongoDB initialized", vec![]);
+
+    // Create a flag to control the signal loop
+    let signal_loop_running = Arc::new(AtomicBool::new(true));
+
+    // Spawn the signal loop in the background
     let signal_loop_running_clone = signal_loop_running.clone();
+    let simulation_url_clone = simulation_url.clone();
+    span.add_event("Signal loop spawned", vec![]);
+    if let Err(e) = run_signal_loop(collection, simulation_url_clone, signal_loop_running_clone).await {
+        tracing::error!("Signal loop encountered an error: {}", e);
+    }
 
-    // Start background signal generation loop
-    println!("🔄 Starting signal generation loop...");
-    start_signal_loop(signal_collection.clone(), simulation_url.clone(), signal_loop_running_clone);
-
-    // Start Actix web server
-    println!("🌐 Starting HTTP server on 0.0.0.0:8000");
-    match HttpServer::new(move || {
+    // Build and run the HTTP server
+    HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(mongo_client.clone()))
             .app_data(web::Data::new(simulation_url.clone()))
             .app_data(web::Data::new(signal_loop_running.clone()))
             .route("/healthz", web::get().to(healthz))
-            .service(get_signals)
     })
-    .bind(("0.0.0.0", 8000)) {
-        Ok(server) => {
-            println!("✅ HTTP server bound successfully");
-            server.run().await
-        }
-        Err(e) => {
-            eprintln!("❌ Failed to bind HTTP server: {}", e);
-            std::process::exit(1);
-        }
-    }
+    .bind(("0.0.0.0", 8080))?
+    .run()
+    .await
 }

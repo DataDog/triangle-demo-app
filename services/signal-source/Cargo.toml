@@ -8,12 +8,20 @@ name = "signal-source"
 path = "src/main.rs"
 
 [dependencies]
-actix-web = "4"
+actix-web = "4.4.0"
 actix-cors = "0.6"
-mongodb = {version = "3.2"}
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1.0", features = ["full"] }
 rand = "0.8"
-reqwest = { version = "0.11", features = ["json", "rustls-tls"] }
-serde = { version = "1", features = ["derive"] }
+reqwest = { version = "0.11", features = ["json"] }
+serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-futures-util = "0.3.29"
+futures = "0.3"
+futures-util = "0.3"
+mongodb = { version = "3.2.3"}
+tracing = { version = ">=0.1.40", default-features = false }
+tracing-core = { version = ">=0.1.33", default-features = false }
+tracing-subscriber = { version = "0.3", default-features = false }
+tracing-opentelemetry = "0.30"
+opentelemetry = "0.28.0"
+opentelemetry_sdk = "0.28.0"
+opentelemetry-stdout = { version = "0.28.0", features = ["trace"] }

@@ -11,7 +11,7 @@ async def get_db():
 
         # Try to get the full URI first
         mongo_uri = os.getenv("MONGO_URI")
-        if not mongo_uri:
+        if not mongo_ri:
             # If no URI, construct it from individual components
             mongo_user = os.getenv("MONGO_USERNAME")
             mongo_pass = os.getenv("MONGO_PASSWORD")

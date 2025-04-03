@@ -79,6 +79,21 @@ spec:
             # Application specific environment variables
             - name: SIMULATION_URL
               value: {{ .Values.env.SIMULATION_URL | quote }}
+            # MongoDB Configuration
+            - name: MONGO_USERNAME
+              value: {{ .Values.env.MONGO_USERNAME | quote }}
+            - name: MONGO_PASSWORD
+              value: {{ .Values.env.MONGO_PASSWORD | quote }}
+            - name: MONGO_DB
+              value: {{ .Values.env.MONGO_DB | quote }}
+            - name: MONGO_HOST
+              value: {{ .Values.env.MONGO_HOST | quote }}
+            - name: MONGO_PORT
+              value: {{ .Values.env.MONGO_PORT | quote }}
+            - name: MONGO_AUTH_SOURCE
+              value: {{ .Values.env.MONGO_AUTH_SOURCE | quote }}
+            - name: LOCATOR_URL
+              value: {{ .Values.env.LOCATOR_URL | quote }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           startupProbe:

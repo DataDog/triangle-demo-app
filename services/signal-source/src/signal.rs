@@ -5,6 +5,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use actix_web::{get, web, HttpResponse, Responder};
 use mongodb::{bson::doc, Client};
 use futures_util::stream::TryStreamExt;
+use tracing::{info, error};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Signal {
@@ -15,7 +16,6 @@ pub struct Signal {
 
 pub fn generate_signal() -> Signal {
     let mut rng: ThreadRng = rand::thread_rng();
-
     // Generate signals in a more structured pattern to test triangulation
     let pattern = rng.gen_range(0..100);
 
@@ -56,7 +56,7 @@ pub fn generate_signal() -> Signal {
 
 #[get("/api/signals/signals")]
 pub async fn get_signals(client: web::Data<Client>) -> impl Responder {
-    println!("📥 Received request to /api/signals/signals");
+    info!("📥 Received request to /api/signals/signals");
 
     let db = client.database("triangle");
     let collection = db.collection::<Signal>("signals");
@@ -65,12 +65,12 @@ pub async fn get_signals(client: web::Data<Client>) -> impl Responder {
         Ok(cursor) => match cursor.try_collect::<Vec<_>>().await {
             Ok(results) => HttpResponse::Ok().json(results),
             Err(e) => {
-                eprintln!("❌ Failed to collect signals: {}", e);
+                error!("❌ Failed to collect signals: {}", e);
                 HttpResponse::InternalServerError().body("Failed to load signals")
             }
         },
         Err(e) => {
-            eprintln!("❌ Failed to query signals: {}", e);
+            error!("❌ Failed to query signals: {}", e);
             HttpResponse::InternalServerError().body("Failed to fetch signals")
         }
     }

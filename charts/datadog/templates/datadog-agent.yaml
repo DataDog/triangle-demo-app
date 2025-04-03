@@ -25,6 +25,8 @@ spec:
   features:
     apm:
       enabled: true
+    logCollection:
+      enabled: true
     orchestratorExplorer:
       enabled: true
     processDiscovery:

@@ -37,9 +37,12 @@ opentelemetry:
     service.name: "signal-source"
 
 env:
-  MONGO_USERNAME: mongouser
-  MONGO_PASSWORD: mongopass
+  # MongoDB configuration
+  MONGO_HOST: mongodb # Default to service name in k8s
+  MONGO_USERNAME: mongouser # Should be overridden in production
+  MONGO_PASSWORD: mongopass # Should be overridden in production
   MONGO_DB: triangle
+  # Simulation service URL
   SIMULATION_URL: http://simulation:8000/signal
 
 resources:

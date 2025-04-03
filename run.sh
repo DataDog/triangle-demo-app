@@ -20,6 +20,7 @@ required_vars=(
   "MONGO_USERNAME"
   "MONGO_PASSWORD"
   "MONGO_DB"
+  "MONGO_HOST"
   "DD_API_KEY"
   "DD_SITE"
   "DD_APP_KEY"
@@ -75,6 +76,12 @@ envsubst < charts/datadog/templates/datadog-agent.yaml | kubectl apply -f -
 echo "🐳 Building Docker images..."
 for img in signal-source simulation locator; do
   echo "🔨 Building $img:local"
+  if [ "$img" = "signal-source" ]; then
+    # For signal-source, use cargo build with warnings as errors
+    cd "services/$img" && \
+    cargo build && \
+    cd ../..
+  fi
   docker build -t "$img:local" "services/$img"
 done
 
@@ -103,6 +110,9 @@ helm upgrade --install simulation ./charts/simulation \
   --set-string "env.MONGO_USERNAME=${MONGO_USERNAME}" \
   --set-string "env.MONGO_PASSWORD=${MONGO_PASSWORD}" \
   --set-string "env.MONGO_DB=${MONGO_DB}" \
+  --set-string "env.MONGO_HOST=mongodb" \
+  --set-string "env.MONGO_PORT=27017" \
+  --set-string "env.MONGO_AUTH_SOURCE=admin" \
   --set-string "env.LOCATOR_URL=http://locator:8000/bundle"
 
 # Deploy Signal Source which depends on Simulation
@@ -111,6 +121,7 @@ helm upgrade --install signal-source ./charts/signal-source \
   --set-string "env.MONGO_USERNAME=${MONGO_USERNAME}" \
   --set-string "env.MONGO_PASSWORD=${MONGO_PASSWORD}" \
   --set-string "env.MONGO_DB=${MONGO_DB}" \
+  --set-string "env.MONGO_HOST=mongodb" \
   --set-string "env.SIMULATION_URL=${SIMULATION_URL}"
 
 # Deploy Frontend which depends on all services

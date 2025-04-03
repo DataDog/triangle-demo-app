@@ -1,43 +1,59 @@
 use mongodb::{Client, Collection};
 use crate::signal::Signal;
+use std::io;
+use tracing::info;
 
-pub async fn init_mongo() -> (Client, Collection<Signal>, String) {
+pub async fn init_mongo() -> io::Result<(Client, Collection<Signal>, String)> {
+    let mongo_user = std::env::var("MONGO_USERNAME").map_err(|e| {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("MONGO_USERNAME not set: {}", e)
+        )
+    })?;
 
-    let mongo_user = std::env::var("MONGO_USERNAME").unwrap_or_else(|_| {
-        eprintln!("❌ MONGO_USERNAME not set");
-        std::process::exit(1);
-    });
+    let mongo_pass = std::env::var("MONGO_PASSWORD").map_err(|e| {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("MONGO_PASSWORD not set: {}", e)
+        )
+    })?;
 
-    let mongo_pass = std::env::var("MONGO_PASSWORD").unwrap_or_else(|_| {
-        eprintln!("❌ MONGO_PASSWORD not set");
-        std::process::exit(1);
-    });
+    let mongo_db = std::env::var("MONGO_DB").map_err(|e| {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("MONGO_DB not set: {}", e)
+        )
+    })?;
 
-    let mongo_db = std::env::var("MONGO_DB").unwrap_or_else(|_| {
-        eprintln!("❌ MONGO_DB not set");
-        std::process::exit(1);
-    });
+    let mongo_host = std::env::var("MONGO_HOST").unwrap_or_else(|_| "mongodb:27017".to_string());
 
-    let simulation_url = std::env::var("SIMULATION_URL").unwrap_or_else(|_| {
-        eprintln!("❌ SIMULATION_URL not set");
-        std::process::exit(1);
-    });
+    let simulation_url = std::env::var("SIMULATION_URL").map_err(|e| {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("SIMULATION_URL not set: {}", e)
+        )
+    })?;
 
-    println!("🔧 SIMULATION_URL = {simulation_url}");
+    info!("🔧 SIMULATION_URL = {}", simulation_url);
     let mongo_uri = format!(
-        "mongodb://{}:{}@mongodb:27017/{}?authSource=admin",
-        mongo_user, mongo_pass, mongo_db
+        "mongodb://{}:{}@{}/{}?authSource=admin",
+        mongo_user, mongo_pass, mongo_host, mongo_db
     );
 
-    println!("🔗 Mongo URI: {}", mongo_uri);
-    println!("📨 Simulation URL: {}", simulation_url);
+    info!("🔗 Mongo URI: {}", mongo_uri);
+    info!("📨 Simulation URL: {}", simulation_url);
 
     let client = Client::with_uri_str(&mongo_uri)
         .await
-        .expect("❌ MongoDB connection failed");
+        .map_err(|e| {
+            io::Error::new(
+                io::ErrorKind::ConnectionRefused,
+                format!("MongoDB connection failed: {}", e)
+            )
+        })?;
 
     let db = client.database(&mongo_db);
     let collection = db.collection::<Signal>("signals");
 
-    (client, collection, simulation_url)
+    Ok((client, collection, simulation_url))
 }
