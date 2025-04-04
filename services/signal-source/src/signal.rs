@@ -2,10 +2,9 @@ use serde::{Deserialize, Serialize};
 use rand::Rng;
 use rand::rngs::ThreadRng;
 use std::time::{SystemTime, UNIX_EPOCH};
-use actix_web::{get, web, HttpResponse, Responder};
-use mongodb::{bson::doc, Client};
-use futures_util::stream::TryStreamExt;
+use mongodb::{bson::doc, Collection};
 use tracing::{info, error};
+use futures::TryStreamExt;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Signal {
@@ -54,24 +53,25 @@ pub fn generate_signal() -> Signal {
     Signal { x, y, timestamp }
 }
 
-#[get("/api/signals/signals")]
-pub async fn get_signals(client: web::Data<Client>) -> impl Responder {
-    info!("📥 Received request to /api/signals/signals");
+pub async fn get_signals(signals: &Collection<Signal>) -> Result<Vec<Signal>, mongodb::error::Error> {
+    info!("📥 Retrieving signals from MongoDB");
 
-    let db = client.database("triangle");
-    let collection = db.collection::<Signal>("signals");
-
-    match collection.find(doc! {}).await {
-        Ok(cursor) => match cursor.try_collect::<Vec<_>>().await {
-            Ok(results) => HttpResponse::Ok().json(results),
-            Err(e) => {
-                error!("❌ Failed to collect signals: {}", e);
-                HttpResponse::InternalServerError().body("Failed to load signals")
+    match signals.find(doc! {}).await {
+        Ok(cursor) => {
+            match cursor.try_collect::<Vec<_>>().await {
+                Ok(results) => {
+                    info!("✅ Retrieved {} signals from MongoDB", results.len());
+                    Ok(results)
+                },
+                Err(e) => {
+                    error!("❌ Failed to collect signals: {}", e);
+                    Err(e)
+                }
             }
         },
         Err(e) => {
             error!("❌ Failed to query signals: {}", e);
-            HttpResponse::InternalServerError().body("Failed to fetch signals")
+            Err(e)
         }
     }
 }

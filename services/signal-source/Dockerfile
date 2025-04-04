@@ -8,8 +8,8 @@ RUN mkdir src && echo "fn main() {}" > src/main.rs
 RUN cargo build --release
 RUN rm -rf src
 
-# 2. Copy actual source code last
-COPY . .
+# 2. Copy only necessary source files
+COPY src ./src
 
 # 3. Rebuild with actual code
 RUN cargo build --release

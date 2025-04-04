@@ -16,18 +16,56 @@ spec:
     spec:
       containers:
         - name: {{ .Chart.Name }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http
               containerPort: 8000
               protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 30
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
           env:
-            {{- if .Values.opentelemetry.enabled }}
+            - name: MONGO_HOST
+              value: {{ .Values.env.MONGO_HOST | quote }}
+            - name: MONGO_USERNAME
+              value: {{ .Values.env.MONGO_USERNAME | quote }}
+            - name: MONGO_PASSWORD
+              value: {{ .Values.env.MONGO_PASSWORD | quote }}
+            - name: MONGO_DB
+              value: {{ .Values.env.MONGO_DB | quote }}
+            - name: SIMULATION_URL
+              value: {{ .Values.env.SIMULATION_URL | quote }}
             - name: OTEL_SERVICE_NAME
               value: {{ .Values.opentelemetry.serviceName | quote }}
             - name: OTEL_RESOURCE_ATTRIBUTES
-              value: {{ range $key, $value := .Values.opentelemetry.resourceAttributes }}{{ $key }}={{ $value }},{{ end }}
+              value: service.name={{ .Values.opentelemetry.serviceName | quote }}
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: {{ .Values.opentelemetry.exporter.endpoint | quote }}
             - name: OTEL_EXPORTER_OTLP_PROTOCOL
@@ -43,36 +81,8 @@ spec:
             - name: OTEL_PYTHON_INSTRUMENTATION_ENABLED
               value: {{ .Values.opentelemetry.instrumentation.enabled | quote }}
             - name: OTEL_PYTHON_FASTAPI_INSTRUMENTATION_ENABLED
-              value: {{ .Values.opentelemetry.instrumentation.fastapi | quote }}
+              value: {{ .Values.opentelemetry.instrumentation.enabled | quote }}
             - name: OTEL_PYTHON_HTTPX_INSTRUMENTATION_ENABLED
-              value: {{ .Values.opentelemetry.instrumentation.httpx | quote }}
+              value: {{ .Values.opentelemetry.instrumentation.enabled | quote }}
             - name: OTEL_PYTHON_PYMONGO_INSTRUMENTATION_ENABLED
-              value: {{ .Values.opentelemetry.instrumentation.pymongo | quote }}
-            {{- end }}
-            {{- range $key, $value := .Values.env }}
-            - name: {{ $key }}
-              value: {{ $value | quote }}
-            {{- end }}
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
-          startupProbe:
-            httpGet:
-              path: /healthz
-              port: http
-            failureThreshold: 60
-            periodSeconds: 10
-            initialDelaySeconds: 30
-          readinessProbe:
-            httpGet:
-              path: /healthz
-              port: http
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            failureThreshold: 3
-            timeoutSeconds: 5
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: http
-            initialDelaySeconds: 15
-            periodSeconds: 20
+              value: {{ .Values.opentelemetry.instrumentation.enabled | quote }}

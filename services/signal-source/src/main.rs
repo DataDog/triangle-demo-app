@@ -1,88 +1,121 @@
 mod mongo;
 mod signal;
 mod signal_loop;
-mod health;
 
-use actix_web::{web, App, HttpServer};
-use mongo::init_mongo;
-use signal_loop::run_signal_loop;
-use health::healthz;
-use std::io::{self, Write};
-use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
-use std::sync::OnceLock;
-use opentelemetry::KeyValue;
+use std::sync::atomic::AtomicBool;
+
+use axum::{
+    routing::get,
+    Router,
+    extract::State,
+    response::Json,
+};
 use opentelemetry::{
     global,
-    propagation::Extractor,
-    trace::{Span, SpanKind, Tracer},
+    trace::{SpanKind, Tracer},
 };
 use opentelemetry_sdk::{propagation::TraceContextPropagator, trace::SdkTracerProvider};
 use opentelemetry_stdout::SpanExporter;
+use tracing::{info, error};
+use tracing_subscriber;
+use mongodb::Collection;
 
+use crate::mongo::init_mongo;
+use crate::signal_loop::run_signal_loop;
+use crate::signal::{Signal, get_signals};
+
+// Initialize tracer
 fn init_tracer() -> SdkTracerProvider {
     global::set_text_map_propagator(TraceContextPropagator::new());
-    // Install stdout exporter pipeline to be able to retrieve the collected spans.
     let provider = SdkTracerProvider::builder()
         .with_simple_exporter(SpanExporter::default())
         .build();
-
     global::set_tracer_provider(provider.clone());
     provider
 }
 
+// Simple health check handler
+async fn health_check() -> &'static str {
+    "OK"
+}
+
+// Handler to retrieve signals
+async fn get_signals_handler(
+    State(signals): State<Arc<Collection<Signal>>>,
+) -> Json<Vec<Signal>> {
+    let signals_vec = match get_signals(&signals).await {
+        Ok(s) => s,
+        Err(_) => Vec::new(),
+    };
+    Json(signals_vec)
+}
+
 #[tokio::main]
-async fn main() -> io::Result<()> {
-    // Initialize tracing with OpenTelemetry integration
-    init_tracer();
-    let tracer = global::tracer("server");
-    let mut span = tracer
-    .span_builder("main")
-    .with_kind(SpanKind::Server)
-    .start(&tracer);
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Initialize logging
+    tracing_subscriber::fmt::init();
 
-
-    // Set a panic hook to capture and log panics with backtraces
-    std::panic::set_hook(Box::new(|info| {
-        let thread = std::thread::current();
-        let thread_name = thread.name().unwrap_or("<unnamed>");
-        eprintln!("🔥 PANIC in thread '{}': {}", thread_name, info);
-        eprintln!("🔥 Backtrace: {:?}", std::backtrace::Backtrace::force_capture());
-        std::io::stderr().flush().unwrap();
+    // Set up panic hook
+    std::panic::set_hook(Box::new(|panic_info| {
+        error!("💥 Panic occurred: {:?}", panic_info);
     }));
 
-    span.add_event("Server is starting", vec![]);
+    // Initialize tracer
+    let _provider = init_tracer();
+    info!("Initializing tracer...");
+    let tracer = global::tracer("server");
+    let _span = tracer
+        .span_builder("server_startup")
+        .with_kind(SpanKind::Server)
+        .start(&tracer);
 
+    info!("Initializing MongoDB connection...");
+    let (mongo_client, signals_collection, simulation_url) = match init_mongo().await {
+        Ok(result) => {
+            info!("✅ MongoDB connection established");
+            result
+        }
+        Err(e) => {
+            error!("Failed to initialize MongoDB: {}", e);
+            return Ok(());
+        }
+    };
 
-    // Initialize MongoDB
-    let (mongo_client, collection, simulation_url) = init_mongo().await.map_err(|e| {
-        io::Error::new(
-            io::ErrorKind::Other,
-            format!("Failed to initialize MongoDB: {}", e),
-        )
-    })?;
-    span.add_event("MongoDB initialized", vec![]);
+    // Wrap signals_collection in an Arc for use in both the loop and the router
+    let signals_collection_arc = Arc::new(signals_collection);
 
     // Create a flag to control the signal loop
-    let signal_loop_running = Arc::new(AtomicBool::new(true));
+    let running = Arc::new(AtomicBool::new(true));
+    let running_clone = running.clone();
 
-    // Spawn the signal loop in the background
-    let signal_loop_running_clone = signal_loop_running.clone();
-    let simulation_url_clone = simulation_url.clone();
-    span.add_event("Signal loop spawned", vec![]);
-    if let Err(e) = run_signal_loop(collection, simulation_url_clone, signal_loop_running_clone).await {
-        tracing::error!("Signal loop encountered an error: {}", e);
+    // Spawn the signal loop in a separate task
+    {
+        let signals_clone = Arc::clone(&signals_collection_arc);
+        let simulation_url_clone = simulation_url.clone();
+        tokio::spawn(async move {
+            if let Err(e) = run_signal_loop(
+                mongo_client,
+                signals_clone,
+                simulation_url_clone,
+                running_clone,
+            ).await {
+                error!("Signal loop error: {}", e);
+            }
+        });
     }
 
-    // Build and run the HTTP server
-    HttpServer::new(move || {
-        App::new()
-            .app_data(web::Data::new(mongo_client.clone()))
-            .app_data(web::Data::new(simulation_url.clone()))
-            .app_data(web::Data::new(signal_loop_running.clone()))
-            .route("/healthz", web::get().to(healthz))
-    })
-    .bind(("0.0.0.0", 8080))?
-    .run()
-    .await
+    // Build the Axum router
+    let app = Router::new()
+        .route("/healthz", get(health_check))
+        .route("/api/signals", get(get_signals_handler))
+        .with_state(signals_collection_arc);
+
+    // Start the server
+    let addr = "0.0.0.0:8000";
+    info!("🚀 Starting server on {}", addr);
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    axum::serve(listener, app).await?;
+
+    Ok(())
 }
