@@ -14,25 +14,25 @@ use std::io::{self, Write};
 async fn main() -> std::io::Result<()> {
     // Panic logger
     std::panic::set_hook(Box::new(|info| {
-        eprintln!("🔥 PANIC: {}", info);
+        eprintln!("PANIC: {}", info);
         io::stderr().flush().unwrap();
     }));
 
-    println!("🚀 Signal source starting...");
+    println!("Signal source starting...");
     io::stdout().flush().unwrap();
 
     // Initialize MongoDB + read simulation URL
-    println!("🔧 Initializing MongoDB connection...");
+    println!("Initializing MongoDB connection...");
     io::stdout().flush().unwrap();
 
     let (mongo_client, signal_collection, simulation_url) = match init_mongo().await {
         Ok(result) => {
-            println!("✅ MongoDB initialized successfully");
+            println!("MongoDB initialized successfully");
             io::stdout().flush().unwrap();
             result
         },
         Err(e) => {
-            eprintln!("❌ Failed to initialize MongoDB: {}", e);
+            eprintln!("Failed to initialize MongoDB: {}", e);
             io::stderr().flush().unwrap();
             std::process::exit(1);
         }
@@ -42,7 +42,7 @@ async fn main() -> std::io::Result<()> {
     start_signal_loop(signal_collection.clone(), simulation_url.clone());
 
     // Start Actix web server
-    println!("🌐 Starting HTTP server on 0.0.0.0:8000");
+    println!("Starting HTTP server on 0.0.0.0:8000");
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(mongo_client.clone()))

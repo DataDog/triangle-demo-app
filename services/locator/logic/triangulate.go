@@ -27,7 +27,7 @@ func TriangulateFromBundle(bundle models.SignalBundle) models.Detection {
 
 func Triangulate(towers []models.TowerDetection, detections []models.Detection) models.Detection {
 	if len(towers) != 3 || len(detections) != 3 {
-		fmt.Printf("[triangulation] ❌ Need exactly 3 towers and detections, got %d and %d\n",
+		fmt.Printf("[triangulation] Need exactly 3 towers and detections, got %d and %d\n",
 			len(towers), len(detections))
 		return fallbackDetection()
 	}
@@ -79,7 +79,7 @@ func Triangulate(towers []models.TowerDetection, detections []models.Detection) 
 	)
 
 	if err != nil {
-		fmt.Printf("[triangulation] ❌ Nonlinear solver failed: %v\n", err)
+		fmt.Printf("[triangulation] Nonlinear solver failed: %v\n", err)
 		// Fall back to linear solver with same tower ordering
 		x, y, err = solveTDOAFromDeltas(
 			float64(pairs[0].tower.X), float64(pairs[0].tower.Y), // T1 (earliest)
@@ -88,7 +88,7 @@ func Triangulate(towers []models.TowerDetection, detections []models.Detection) 
 			d12, d13,
 		)
 		if err != nil {
-			fmt.Printf("[triangulation] ❌ Linear solver also failed: %v\n", err)
+			fmt.Printf("[triangulation] Linear solver also failed: %v\n", err)
 			return fallbackDetection()
 		}
 	}
@@ -131,7 +131,7 @@ func solveTDOAFromDeltas(
 
 	// Validate TDoA distances are reasonable compared to tower distances
 	if math.Abs(d12) > dAB || math.Abs(d13) > dAC {
-		fmt.Printf("[solver] ❌ TDoA distances exceed physical separation:\n")
+		fmt.Printf("[solver] TDoA distances exceed physical separation:\n")
 		if math.Abs(d12) > dAB {
 			fmt.Printf("         - |d12| (%.2fm) > AB (%.2fm)\n", math.Abs(d12), dAB)
 		}
@@ -407,7 +407,7 @@ func solveTDOANonlinear(
 		}
 	}
 
-	fmt.Printf("[solver] ✅ best solution: (x,y)=(%.1f, %.1f) residual=%.8f method=%s\n",
+	fmt.Printf("[solver] best solution: (x,y)=(%.1f, %.1f) residual=%.8f method=%s\n",
 		best.x, best.y, best.residual, best.method)
 
 	return best.x, best.y, nil

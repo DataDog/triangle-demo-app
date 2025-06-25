@@ -56,7 +56,7 @@ pub fn generate_signal() -> Signal {
 
 #[get("/api/signals/signals")]
 pub async fn get_signals(client: web::Data<Client>) -> impl Responder {
-    println!("📥 Received request to /api/signals/signals");
+    println!("Received request to /api/signals/signals");
 
     let db = client.database("triangle");
     let collection = db.collection::<Signal>("signals");
@@ -65,12 +65,12 @@ pub async fn get_signals(client: web::Data<Client>) -> impl Responder {
         Ok(cursor) => match cursor.try_collect::<Vec<_>>().await {
             Ok(results) => HttpResponse::Ok().json(results),
             Err(e) => {
-                eprintln!("❌ Failed to collect signals: {}", e);
+                eprintln!("Failed to collect signals: {}", e);
                 HttpResponse::InternalServerError().body("Failed to load signals")
             }
         },
         Err(e) => {
-            eprintln!("❌ Failed to query signals: {}", e);
+            eprintln!("Failed to query signals: {}", e);
             HttpResponse::InternalServerError().body("Failed to fetch signals")
         }
     }

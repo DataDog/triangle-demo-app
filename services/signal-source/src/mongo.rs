@@ -21,9 +21,6 @@ pub async fn init_mongo() -> Result<(Client, Collection<Signal>, String), Box<dy
         mongo_user, mongo_pass, mongo_db
     );
 
-    println!("🔗 Mongo URI: {}", mongo_uri);
-    println!("📨 Simulation URL: {}", simulation_url);
-
     let client = Client::with_uri_str(&mongo_uri)
         .await
         .map_err(|e| format!("MongoDB connection failed: {}", e))?;

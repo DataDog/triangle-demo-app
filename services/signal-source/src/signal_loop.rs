@@ -34,16 +34,16 @@ async fn run_loop(collection: Collection<Signal>, simulation_url: String) {
         };
 
         let signal = generate_signal();
-        println!("📡 Generated signal: {:?}", signal);
+        println!("Generated signal: {:?}", signal);
 
         match collection.insert_one(&signal).await {
-            Ok(result) => println!("✅ Inserted into MongoDB: {:?}", result.inserted_id),
-            Err(err) => eprintln!("❌ Mongo insert failed: {}", err),
+            Ok(result) => println!("Inserted into MongoDB: {:?}", result.inserted_id),
+            Err(err) => eprintln!("Mongo insert failed: {}", err),
         }
 
         let response = http_client.post(&simulation_url).json(&signal).send().await;
         if let Err(err) = response {
-            eprintln!("❌ Failed to send to simulation: {}", err);
+            eprintln!("Failed to send to simulation: {}", err);
         }
 
         sleep(Duration::from_millis(delay)).await;
@@ -54,11 +54,11 @@ async fn wait_for_simulation(http_client: &HttpClient, health_url: &str) {
     loop {
         match http_client.get(health_url).send().await {
             Ok(res) if res.status().is_success() => {
-                println!("✅ Simulation service is reachable. Starting signal loop.");
+                println!("Simulation service is reachable. Starting signal loop.");
                 break;
             }
             _ => {
-                println!("⏳ Waiting for simulation service to become available...");
+                println!("Waiting for simulation service to become available...");
                 sleep(Duration::from_secs(2)).await;
             }
         }
