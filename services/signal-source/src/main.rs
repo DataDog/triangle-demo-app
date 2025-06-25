@@ -15,13 +15,28 @@ async fn main() -> std::io::Result<()> {
     // Panic logger
     std::panic::set_hook(Box::new(|info| {
         eprintln!("🔥 PANIC: {}", info);
+        io::stderr().flush().unwrap();
     }));
 
     println!("🚀 Signal source starting...");
     io::stdout().flush().unwrap();
 
     // Initialize MongoDB + read simulation URL
-    let (mongo_client, signal_collection, simulation_url) = init_mongo().await;
+    println!("🔧 Initializing MongoDB connection...");
+    io::stdout().flush().unwrap();
+
+    let (mongo_client, signal_collection, simulation_url) = match init_mongo().await {
+        Ok(result) => {
+            println!("✅ MongoDB initialized successfully");
+            io::stdout().flush().unwrap();
+            result
+        },
+        Err(e) => {
+            eprintln!("❌ Failed to initialize MongoDB: {}", e);
+            io::stderr().flush().unwrap();
+            std::process::exit(1);
+        }
+    };
 
     // Start background signal generation loop
     start_signal_loop(signal_collection.clone(), simulation_url.clone());

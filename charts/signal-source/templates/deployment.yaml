@@ -18,7 +18,7 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
           envFrom:
             - secretRef:
-                name: mongodb-secret
+                name: mongodb-auth
             - configMapRef:
                 name: mongodb-config
 

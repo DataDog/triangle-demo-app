@@ -1,27 +1,19 @@
 use mongodb::{Client, Collection};
 use crate::signal::Signal;
 
-pub async fn init_mongo() -> (Client, Collection<Signal>, String) {
+pub async fn init_mongo() -> Result<(Client, Collection<Signal>, String), Box<dyn std::error::Error>> {
 
-    let mongo_user = std::env::var("MONGO_USERNAME").unwrap_or_else(|_| {
-        eprintln!("❌ MONGO_USERNAME not set");
-        std::process::exit(1);
-    });
+    let mongo_user = std::env::var("MONGO_USERNAME")
+        .map_err(|_| "MONGO_USERNAME environment variable not set")?;
 
-    let mongo_pass = std::env::var("MONGO_PASSWORD").unwrap_or_else(|_| {
-        eprintln!("❌ MONGO_PASSWORD not set");
-        std::process::exit(1);
-    });
+    let mongo_pass = std::env::var("MONGO_PASSWORD")
+        .map_err(|_| "MONGO_PASSWORD environment variable not set")?;
 
-    let mongo_db = std::env::var("MONGO_DB").unwrap_or_else(|_| {
-        eprintln!("❌ MONGO_DB not set");
-        std::process::exit(1);
-    });
+    let mongo_db = std::env::var("MONGO_DB")
+        .map_err(|_| "MONGO_DB environment variable not set")?;
 
-    let simulation_url = std::env::var("SIMULATION_URL").unwrap_or_else(|_| {
-        eprintln!("❌ SIMULATION_URL not set");
-        std::process::exit(1);
-    });
+    let simulation_url = std::env::var("SIMULATION_URL")
+        .map_err(|_| "SIMULATION_URL environment variable not set")?;
 
     println!("🔧 SIMULATION_URL = {simulation_url}");
     let mongo_uri = format!(
@@ -34,10 +26,10 @@ pub async fn init_mongo() -> (Client, Collection<Signal>, String) {
 
     let client = Client::with_uri_str(&mongo_uri)
         .await
-        .expect("❌ MongoDB connection failed");
+        .map_err(|e| format!("MongoDB connection failed: {}", e))?;
 
     let db = client.database(&mongo_db);
     let collection = db.collection::<Signal>("signals");
 
-    (client, collection, simulation_url)
+    Ok((client, collection, simulation_url))
 }
