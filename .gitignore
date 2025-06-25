@@ -50,3 +50,9 @@ Thumbs.db
 # ───── Misc ─────
 *.bak
 *.tmp
+# Certificate and key files
+*.key
+*.crt
+*.csr
+*.pem
+ca.srl
