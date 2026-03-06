@@ -9,11 +9,11 @@ path = "src/main.rs"
 
 [dependencies]
 actix-web = "4"
-actix-cors = "0.6"
+actix-cors = "0.7"
 mongodb = {version = "3.2"}
 tokio = { version = "1", features = ["full"] }
-rand = "0.8"
-reqwest = { version = "0.11", features = ["json", "rustls-tls"] }
+rand = "0.10"
+reqwest = { version = "0.13", features = ["json", "rustls-tls"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0"
 futures-util = "0.3.29"
