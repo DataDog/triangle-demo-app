@@ -9,7 +9,7 @@ path = "src/main.rs"
 
 [dependencies]
 actix-web = "4"
-actix-cors = "0.6"
+actix-cors = "0.7"
 mongodb = {version = "3.2"}
 tokio = { version = "1", features = ["full"] }
 rand = "0.8"
